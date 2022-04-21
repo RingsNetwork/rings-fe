@@ -1,0 +1,134 @@
+.container {
+  padding: 10px;
+  height: 100vh;
+}
+
+.main {
+  display: flex;
+  justify-content: space-between;
+  height: 100%
+}
+
+.left {
+  width: 260px;
+  border: 1px solid var(--color-section-border);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  :global .bd {
+    flex-grow: 1;
+  }
+}
+
+.mod-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user {
+  :global .name {
+    font-size: 16px;
+  }
+
+  :global .number {
+    color: #757D8A;
+    font-size: 10px;
+    margin-top: 5px;
+  }
+}
+
+.mod-search {
+  margin: 30px 0;
+}
+
+.center {
+  margin: 0 10px;
+  flex-grow: 1;
+}
+
+.right {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.mod-clock {
+  padding: 15px;
+  border: 1px solid var(--color-section-border);
+  font-family: 'Dogica Pixel';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 30px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.mod-network {
+  margin: 15px 0;
+  padding: 0 5px;
+  font-weight: 400;
+  font-size: 8px;
+  display: flex;
+  justify-content: space-between;
+
+  :global .value {
+    font-size: 20px;
+    margin-top: 4px;
+  }
+
+  :global .bd {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  :global .label {
+    color: rgba(46, 46, 58, 0.5);
+  }
+}
+
+.mod-member {
+  flex-grow: 1;
+  border: 1px solid var(--color-section-border);
+  padding: 15px;
+}
+
+.section {
+  font-size: 10px;
+
+  :global .hd {
+    color: #757D8A;
+    margin-bottom: 25px;
+  }
+
+  :global li {
+    margin-bottom: 15px;
+    height: 28px;
+    line-height: 28px;
+
+    &:hover {
+      background: var(--color-item-hover);
+      border: 1px solid var(--color-section-border);
+      padding: 0 10px;
+      cursor: pointer;
+    }
+  }
+}
+
+.divider {
+  border-top: 1px solid var(--color-section-border);
+  margin: 30px 0;
+}
+
+@media (max-width: 600px) {
+  .grid {
+    width: 100%;
+    flex-direction: column;
+  }
+}

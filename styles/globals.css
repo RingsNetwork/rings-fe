@@ -1,0 +1,48 @@
+@import './fonts.css';
+
+html,
+body {
+  font-family: Dogica Pixel, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+ul, li {
+  list-style: none;
+}
+
+body,
+body[data-theme="light"] {
+  --color-text-primary: #2E2E3A;
+  --color-text-secondary: #076963;
+  --color-bg-primary: #fff;
+  --color-bg-toggle: #1E90FF; 
+  --color-section-border: rgba(46, 46, 58, 0.2);
+  --color-item-hover:  rgba(46, 46, 58, 0.1);
+}
+
+body[data-theme="dark"] {
+  --color-text-primary: #fff;
+  --color-text-secondary: #ff6b00;
+  --color-bg-primary: #15232d;
+  --color-bg-toggle: #a9a9a9; 
+  --color-section-border: rgba(255, 255, 255, 0.2);
+  --color-item-hover:  rgba(255, 255, 255, 0.1)
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: sans-serif;
+	transition: background 0.25s ease-in-out;
+}
