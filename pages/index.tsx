@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 
 import { format } from 'fecha'
 
-import init, { Client } from 'bns-node'
+import init, { Client, connect_peer_via_http, UnsignedInfo } from 'bns-node'
 
 import styles from '../styles/Home.module.scss'
 
@@ -42,20 +42,25 @@ const Home: NextPage = () => {
   useEffect(() => {
     if (account && provider && !client && wasm) {
       const initClient = async () => {
-        const signFn = (str: string) => {
-          // @ts-ignore
-          const signer = provider.getSigner(account)
+        // const signFn = (str: string) => {
+        //   // @ts-ignore
+        //   const signer = provider.getSigner(account)
 
-          return signer.signMessage(str)
-        }
-
-        const client = await Client.new_client(account, "stun://stun.l.google.com:19302", signFn)
-
+        //   return signer.signMessage(str)
+        // }
+        const unsignedInfo = new UnsignedInfo(account);
+        const random_key = unsignedInfo.random_key;
+        console.log(`random_key: ${unsignedInfo.random_key}`)
+        // @ts-ignore
+        const signer = provider.getSigner(account);
+        const signed = await signer.signMessage(random_key);
+        console.log(`signed: ${signed}`)
+        const client = new Client(unsignedInfo, signed, "stun://stun.l.google.com:19302");
         console.log(client)
         setClient(client)
         // client.start()
-        client.connect_peer_via_http('http://172.22.0.4:50000')
-
+        const transportId = await connect_peer_via_http(client, 'http://127.0.0.1:50000/');
+        console.log(`transportId: ${transportId}`)
       }
 
       try {
