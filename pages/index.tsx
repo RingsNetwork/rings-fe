@@ -1,11 +1,14 @@
-
 import { useEffect, useState } from 'react'
+
+import { useWeb3React } from '@web3-react/core'
 
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import dynamic from "next/dynamic";
 
 import { format } from 'fecha'
+
+import init, { Client } from 'bns-node'
 
 import styles from '../styles/Home.module.scss'
 
@@ -14,6 +17,9 @@ const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr
 
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
+  const { account, provider } = useWeb3React()
+  const [client, setClient] = useState<Client | null>(null)
+  const [wasm, setWasm] = useState<any>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,6 +30,41 @@ const Home: NextPage = () => {
       clearInterval(timer)
     }
   }, [])
+
+  useEffect(() => {
+    if (!wasm) {
+      const w = init()
+
+      setWasm(w)
+    }
+  }, [wasm])
+
+  useEffect(() => {
+    if (account && provider && !client && wasm) {
+      const initClient = async () => {
+        const signFn = (str: string) => {
+          // @ts-ignore
+          const signer = provider.getSigner(account)
+
+          return signer.signMessage(str)
+        }
+
+        const client = await Client.new_client(account, "stun://stun.l.google.com:19302", signFn)
+
+        console.log(client)
+        setClient(client)
+        // client.start()
+        client.connect_peer_via_http('http://172.22.0.4:50000')
+
+      }
+
+      try {
+        initClient()
+      } catch (e) {
+        console.error(e)
+      }
+    } 
+  }, [account, client, wasm, provider])
 
   const renderLeft = () => {
     return (
