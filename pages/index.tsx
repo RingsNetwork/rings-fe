@@ -5,6 +5,7 @@ import { useWeb3React } from '@web3-react/core'
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import dynamic from "next/dynamic";
+import web3 from "web3";
 
 import { format } from 'fecha'
 
@@ -49,13 +50,14 @@ const Home: NextPage = () => {
         //   return signer.signMessage(str)
         // }
         const unsignedInfo = new UnsignedInfo(account);
-        const random_key = unsignedInfo.random_key;
-        console.log(`random_key: ${unsignedInfo.random_key}`)
+        console.log(`authInfo: ${unsignedInfo.auth}`)
         // @ts-ignore
         const signer = provider.getSigner(account);
-        const signed = await signer.signMessage(random_key);
+        const signed = await signer.signMessage(unsignedInfo.auth);
         console.log(`signed: ${signed}`)
-        const client = new Client(unsignedInfo, signed, "stun://stun.l.google.com:19302");
+        const sig = new Uint8Array(web3.utils.hexToBytes(signed));
+        console.log(`sig: ${sig.toString()}, len: ${sig.length}`)
+        const client = new Client(unsignedInfo, sig, "stun://stun.l.google.com:19302");
         console.log(client)
         setClient(client)
         // client.start()
