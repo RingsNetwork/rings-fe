@@ -47,6 +47,59 @@
 .center {
   margin: 0 10px;
   flex-grow: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  :global .contacts-mod {
+    display: flex;
+    align-items: center;
+  }
+
+  :global .contact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 0 10px;
+    height: 30px;
+    cursor: pointer;
+
+    .btn-close {
+      margin-left: 10px;
+      transform: rotate(45deg);
+    }
+  }
+
+  :global .active {
+    background-color: var(--color-text-primary);
+    color: var(--color-bg-primary);
+  }
+
+  :global .messages-mod {
+    border: 1px solid var(--color-section-border);
+    height: calc(100% - 30px);
+  }
+
+  :global .send-mod {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+
+    .input-text {
+      flex-grow: 1;
+      margin-right: 20px;
+      height: 32px;
+      padding: 0 5px;
+    }
+
+    .btn-send {
+      cursor: pointer;
+    }
+  }
 }
 
 .right {

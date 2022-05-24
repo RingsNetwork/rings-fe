@@ -77,7 +77,7 @@ const StyledModalBackdrop = styled.div`
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(14, 13, 22, 0.5);
+  // background: rgba(14, 13, 22, 0.5);
   backdrop-filter: blur(3px);
 `
 

@@ -5,7 +5,6 @@ import metamaskLogo from '../../assets/img/metamask-fox.svg'
 
 import { hooks, metaMask } from '../../connectors/metaMask'
 import { ConnectWithSelect } from '../ConnectWithSelect'
-import { on } from 'events'
 
 const {
   useChainId,
@@ -21,9 +20,9 @@ export default function MetaMaskCard({ onConnect }: { onConnect: () => void }){
   const isActivating = useIsActivating()
 
   // attempt to connect eagerly on mount
-  useEffect(() => {
-    void metaMask.connectEagerly()
-  }, [])
+  // useEffect(() => {
+  // void metaMask.connectEagerly()
+  // }, [])
 
   return (
     <div>

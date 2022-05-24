@@ -17,7 +17,10 @@ const ModalActions: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   )
 }
 
-const StyledModalActions = styled.div``
+const StyledModalActions = styled.div`
+  margin-top: 24px;
+  text-align: right;
+`
 
 const StyledModalAction = styled.div`
   flex: 1;

@@ -31,9 +31,9 @@ export default function WalletConnectCard({
   const ENSNames = useENSNames(provider)
 
   // attempt to connect eagerly on mount
-  useEffect(() => {
-    void walletConnect.connectEagerly()
-  }, [])
+  // useEffect(() => {
+  //   void walletConnect.connectEagerly()
+  // }, [])
 
   return (
     <div>

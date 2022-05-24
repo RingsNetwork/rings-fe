@@ -26,7 +26,7 @@ body[data-theme="light"] {
   --color-text-primary: #2E2E3A;
   --color-text-secondary: #076963;
   --color-bg-primary: #fff;
-  --color-bg-toggle: #1E90FF; 
+  --color-bg-toggle:  rgba(46, 46, 58, 0.05); 
   --color-section-border: rgba(46, 46, 58, 0.2);
   --color-item-hover:  rgba(46, 46, 58, 0.1);
 }
@@ -35,7 +35,7 @@ body[data-theme="dark"] {
   --color-text-primary: #fff;
   --color-text-secondary: #ff6b00;
   --color-bg-primary: #15232d;
-  --color-bg-toggle: #a9a9a9; 
+  --color-bg-toggle: rgba(255, 255, 255, 0.05); 
   --color-section-border: rgba(255, 255, 255, 0.2);
   --color-item-hover:  rgba(255, 255, 255, 0.1)
 }
@@ -45,4 +45,10 @@ body {
   color: var(--color-text-primary);
   font-family: sans-serif;
 	transition: background 0.25s ease-in-out;
+}
+
+.modal {
+  border: 1px solid var(--color-section-border);
+  padding: 30px 20px;
+  background-color: var(--color-bg-toggle);
 }

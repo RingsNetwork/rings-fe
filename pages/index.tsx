@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 import { useWeb3React } from '@web3-react/core'
 
@@ -9,9 +9,10 @@ import web3 from "web3";
 
 import { format } from 'fecha'
 
-import init, { Client, connect_peer_via_http, UnsignedInfo } from 'bns-node'
+import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance } from 'rings-node'
 
 import styles from '../styles/Home.module.scss'
+import formatAddress from '../utils/formatAddress';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
@@ -21,6 +22,15 @@ const Home: NextPage = () => {
   const { account, provider } = useWeb3React()
   const [client, setClient] = useState<Client | null>(null)
   const [wasm, setWasm] = useState<any>(null)
+
+  const [groups, setGroups] = useState<any[]>([])
+  const [peers, setPeers] = useState<Peer[]>([])
+
+  const [chats, setChats] = useState<Map<string, string[]>>(new Map())
+
+  const [activeChat, setActiveChat] = useState<string | null>(null)
+
+  const [message, setMessage] = useState<string>('Hello, world!')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,11 +44,27 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     if (!wasm) {
-      const w = init()
+      const initWasm = async () => {
+        const w = await init()
 
-      setWasm(w)
+        setWasm(w)
+      }
+      
+      initWasm()
     }
   }, [wasm])
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value)
+  }, [])
+
+  const handleSendMessage = useCallback(async () => {
+    if (client && peers.length) {
+      console.log(message)
+      const d = await client.send_message(peers[0].address, message)
+      console.log(d)
+    }
+  }, [client, peers, message])
 
   useEffect(() => {
     if (account && provider && !client && wasm) {
@@ -57,18 +83,42 @@ const Home: NextPage = () => {
         console.log(`signed: ${signed}`)
         const sig = new Uint8Array(web3.utils.hexToBytes(signed));
         console.log(`sig: ${sig.toString()}, len: ${sig.length}`)
-        const client = new Client(unsignedInfo, sig, "stun://stun.l.google.com:19302");
+
+        const client = new Client(unsignedInfo, sig, process.env.NEXT_PUBLIC_CLIENT_URL!);
         console.log(client)
         setClient(client)
-        // client.start()
-        const transportId = await connect_peer_via_http(client, 'http://127.0.0.1:50000/');
+
+        const callback = new MessageCallbackInstance(
+          async (relay: any, prev: String, msg: any) => {
+            console.group('on custom message')
+            console.log(relay)
+            console.log(prev)
+            console.log(msg)
+            console.groupEnd()
+          }, async (
+            relay: any, prev: String,
+          ) => {
+            console.group('on builtin message')
+            console.log(relay)
+            console.log(prev)
+            console.groupEnd()
+          },
+        )
+        
+        await client.listen(callback)
+        console.log(`listen`)
+
+        const transportId = await client.connect_peer_via_http(process.env.NEXT_PUBLIC_SERVER_URL!);
         console.log(`transportId: ${transportId}`)
+        const peers = await client.list_peers()
+        console.log(peers)
+        setPeers(peers)
       }
 
       try {
         initClient()
       } catch (e) {
-        console.error(e)
+        console.log(`error`, e)
       }
     } 
   }, [account, client, wasm, provider])
@@ -78,43 +128,60 @@ const Home: NextPage = () => {
       <div className={styles.left}>
         <div className='hd'>
           <AccountButton />
-          <div className={styles['mod-user']}>
-            <div className={styles.user}>
-              <div className="name">Name</div>
-              <div className="number">#1080</div>
-            </div>
-            <div className="bd">
-            </div>
-          </div>
+          {
+            account ? (
+              <>
+                <div className={styles['mod-user']}>
+                  <div className={styles.user}>
+                    <div className="name">{formatAddress(account)}</div>
+                    <div className="number">#1080</div>
+                  </div>
+                  <div className="bd">
+                  </div>
+                </div>
 
-          <div className={styles['mod-search']}></div>
+                <div className={styles['mod-search']}></div>
+              </>
+            ) : null
+          }
         </div>
 
         <div className='bd'>
-          <div className={styles.section} style={{marginBottom: '40px'}}>
-            <div className='hd'>Group</div>
-            <div className='bd'>
-              <ul className='list'>
-                <li># Stream_chat</li>
-                <li># Stream_chat</li>
-                <li># Stream_chat</li>
-              </ul>
-            </div>
-          </div>
+          {
+            groups.length ?
+            <div className={styles.section} style={{marginBottom: '40px'}}>
+              <div className='hd'>Group</div>
+              <div className='bd'>
+                <ul className='list'>
+                  <li># Stream_chat</li>
+                  <li># Stream_chat</li>
+                  <li># Stream_chat</li>
+                </ul>
+              </div>
+            </div>: 
+            null
+          }
 
-          <div className={styles.section}>
-            <div className='hd'>Contact</div>
-            <div className='bd'>
-              <ul className='list'>
-                <li>Mary Cooper</li>
-                <li>Mary Cooper</li>
-                <li>Mary Cooper</li>
-                <li>Mary Cooper</li>
-                <li>Mary Cooper</li>
-                <li>Mary Cooper</li>
-              </ul>
-            </div>
-          </div>
+          {
+            peers.length ?
+            <div className={styles.section}>
+              <div className='hd'>Contact</div>
+              <div className='bd'>
+                <ul className='list'>
+                  {
+                    peers.map((peer) => <li key={peer.address} onClick={() => {
+                      setActiveChat(peer.address)
+
+                      if (!chats.get(peer.address)) {
+                        chats.set(peer.address, [])
+                      }
+                    }}>{peer.address}</li>)
+                  }
+                </ul>
+              </div>
+            </div>: 
+            null
+          }
         </div>
 
         <div className='ft'>
@@ -125,8 +192,34 @@ const Home: NextPage = () => {
   }
 
   const renderCenter = () => {
+    const renderHd = () => {
+      let hds: Array<React.ReactNode> = []
+
+      chats.forEach((value, key) => {
+        hds.push(<div key={key} className={key === activeChat ? 'active contact-item' : 'contact-item'} >
+          <span>{key}</span>
+          <span className='btn-close'>+</span>
+        </div>)
+      })
+
+      hds.push(<div key={1} className="contact-item">test1</div>)
+      hds.push(<div key={2} className="contact-item">test2</div>)
+      hds.push(<div key={3} className="contact-item">test3</div>)
+
+      return (
+        <>{hds}</>
+      )
+    } 
+
     return (
-      <div className={styles.center}>center</div>
+      <div className={styles.center}>
+        <div className='contacts-mod'>{renderHd()}</div>
+        <div className='messages-mod'></div>
+        <div className='send-mod'>
+          <input className='input-text' type="text" placeholder='Type message' onChange={handleInputChange} />
+          <div className='btn-send' onClick={handleSendMessage}>Send</div>
+        </div>
+      </div>
     )
   }
   const renderRight = () => {
@@ -159,7 +252,7 @@ const Home: NextPage = () => {
           </div>
           <div className={styles.divider}></div>
           <div className={styles.section}>
-            <div className='hd'>Moderator</div>
+            <div className='hd'>Member</div>
             <div className='bd'>
               <ul className='list'>
                 <li>Mary Cooper</li>

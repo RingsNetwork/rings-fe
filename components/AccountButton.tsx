@@ -4,8 +4,6 @@ import { useWeb3React } from '@web3-react/core'
 import useModal from '../hooks/useModal'
 import WalletProviderModal from './WalletModal'
 
-import formatAddress from '../utils/formatAddress'
-
 interface AccountButtonProps {}
 
 const AccountButton: React.FC<AccountButtonProps> = (props) => {
@@ -25,11 +23,7 @@ const AccountButton: React.FC<AccountButtonProps> = (props) => {
 
   return (
     <div>
-      {!account ? (
-        <div onClick={handleUnlockClick}>Connect Wallet</div>
-      ) : (
-        <div>{formatAddress(account)}</div>
-      )}
+      {!account ? <div onClick={handleUnlockClick}>Connect Wallet</div> : null}
     </div>
   )
 }
