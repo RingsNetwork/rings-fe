@@ -20,6 +20,12 @@
   :global .bd {
     flex-grow: 1;
   }
+
+  :global .list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 .mod-user {
@@ -42,6 +48,10 @@
 
 .mod-search {
   margin: 30px 0;
+}
+
+.mod-manually-connect {
+  margin-bottom: 30px;
 }
 
 .center {
@@ -82,22 +92,60 @@
     height: calc(100% - 30px);
   }
 
+  :global .message-item {
+    color: #2E2E3A;
+    font-size: 13px;
+    margin: 15px 15px 30px;
+
+    > .bd {
+      display: flex;
+      align-items: center;
+      line-height: 1.6;
+
+      .message {
+        display: inline-block;
+        max-width: 70%;
+        background-color: #D8D8D8;
+        border-radius: 20px 20px 20px 0;
+        padding: 10px 20px;
+      }
+    }
+
+    &.me > .bd {
+      justify-content: flex-end;
+
+      .message {
+        background-color: #15CD96;
+        border-radius: 20px 20px 0 20px;
+      }
+    }
+  }
+
   :global .send-mod {
     margin-top: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 5px 0 0;
 
     .input-text {
       flex-grow: 1;
       margin-right: 20px;
-      height: 32px;
-      padding: 0 5px;
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--color-section-border);
+      background-color: var(--color-bg-primary);
+      color: var(--color-text-primary)
     }
 
     .btn-send {
       cursor: pointer;
+      border: 1px solid var(--color-section-border);
+      height: 100%;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
     }
   }
 }

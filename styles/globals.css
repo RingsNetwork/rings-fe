@@ -52,3 +52,7 @@ body {
   padding: 30px 20px;
   background-color: var(--color-bg-toggle);
 }
+
+:focus-visible {
+  outline: none;
+}

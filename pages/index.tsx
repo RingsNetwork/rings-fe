@@ -1,36 +1,50 @@
 import { useEffect, useState, useCallback } from 'react'
-
 import { useWeb3React } from '@web3-react/core'
 
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import dynamic from "next/dynamic";
-import web3 from "web3";
 
 import { format } from 'fecha'
 
-import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance } from 'rings-node'
+import useRings from '../hooks/useRings'
+import useModal from '../hooks/useModal'
+import useWebsocket from '../hooks/useWebsocket'
+
+import formatAddress from '../utils/formatAddress';
+
+import OfferModal from '../components/OfferModal'
+import AddressModal from '../components/AddressModal'
 
 import styles from '../styles/Home.module.scss'
-import formatAddress from '../utils/formatAddress';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
 
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
-  const { account, provider } = useWeb3React()
-  const [client, setClient] = useState<Client | null>(null)
-  const [wasm, setWasm] = useState<any>(null)
+  const { account } = useWeb3React()
+  const { chats, peers, fetchPeers, sendMessage, connectByAddress, client } = useRings()
+  const { setJoinPublicRoom, onliners } = useWebsocket()
 
   const [groups, setGroups] = useState<any[]>([])
-  const [peers, setPeers] = useState<Peer[]>([])
-
-  const [chats, setChats] = useState<Map<string, string[]>>(new Map())
 
   const [activeChat, setActiveChat] = useState<string | null>(null)
+  const [chatList, setChatList] = useState<string[]>([])
 
-  const [message, setMessage] = useState<string>('Hello, world!')
+  const [message, setMessage] = useState<string>('')
+
+  const [sending, setSending] = useState<boolean>(false)
+
+  const [onPresentOfferModal] = useModal(
+    <OfferModal />,
+    'offer'
+  )
+
+  const [onPresentAddressModal] = useModal(
+    <AddressModal />,
+    'address'
+  )
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -42,86 +56,49 @@ const Home: NextPage = () => {
     }
   }, [])
 
-  useEffect(() => {
-    if (!wasm) {
-      const initWasm = async () => {
-        const w = await init()
-
-        setWasm(w)
-      }
-      
-      initWasm()
-    }
-  }, [wasm])
-
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(e)
     setMessage(e.target.value)
   }, [])
 
   const handleSendMessage = useCallback(async () => {
-    if (client && peers.length) {
-      console.log(message)
-      const d = await client.send_message(peers[0].address, message)
-      console.log(d)
+    if (sending || !message || !activeChat) {
+      return false
     }
-  }, [client, peers, message])
 
-  useEffect(() => {
-    if (account && provider && !client && wasm) {
-      const initClient = async () => {
-        // const signFn = (str: string) => {
-        //   // @ts-ignore
-        //   const signer = provider.getSigner(account)
+    try {
+      setSending(true)
+      await sendMessage(activeChat, message)
 
-        //   return signer.signMessage(str)
-        // }
-        const unsignedInfo = new UnsignedInfo(account);
-        console.log(`authInfo: ${unsignedInfo.auth}`)
-        // @ts-ignore
-        const signer = provider.getSigner(account);
-        const signed = await signer.signMessage(unsignedInfo.auth);
-        console.log(`signed: ${signed}`)
-        const sig = new Uint8Array(web3.utils.hexToBytes(signed));
-        console.log(`sig: ${sig.toString()}, len: ${sig.length}`)
+      setMessage('')
+      setSending(false)
+    } catch (e) {
+      setSending(false)
+    }
+  }, [message, activeChat, sending, sendMessage])
 
-        const client = new Client(unsignedInfo, sig, process.env.NEXT_PUBLIC_CLIENT_URL!);
-        console.log(client)
-        setClient(client)
+  const handleOfferModal = useCallback(
+    () => {
+      onPresentOfferModal()
+    },
+    [onPresentOfferModal]
+  )
 
-        const callback = new MessageCallbackInstance(
-          async (relay: any, prev: String, msg: any) => {
-            console.group('on custom message')
-            console.log(relay)
-            console.log(prev)
-            console.log(msg)
-            console.groupEnd()
-          }, async (
-            relay: any, prev: String,
-          ) => {
-            console.group('on builtin message')
-            console.log(relay)
-            console.log(prev)
-            console.groupEnd()
-          },
-        )
-        
-        await client.listen(callback)
-        console.log(`listen`)
+  const handleAddressModal = useCallback(() => { 
+    onPresentAddressModal()
+  }, [onPresentAddressModal])
 
-        const transportId = await client.connect_peer_via_http(process.env.NEXT_PUBLIC_SERVER_URL!);
-        console.log(`transportId: ${transportId}`)
-        const peers = await client.list_peers()
-        console.log(peers)
-        setPeers(peers)
-      }
+  const handleJoinPublicRoom = useCallback(() => {
+    if (account) {
+      setJoinPublicRoom(true)
+    }
+  }, [account, setJoinPublicRoom])
 
-      try {
-        initClient()
-      } catch (e) {
-        console.log(`error`, e)
-      }
-    } 
-  }, [account, client, wasm, provider])
+  const handleConnectByAddress = useCallback(async (address: string) => {
+    if (address) {
+      await connectByAddress(address)
+    }
+  }, [connectByAddress])
 
   const renderLeft = () => {
     return (
@@ -141,12 +118,40 @@ const Home: NextPage = () => {
                 </div>
 
                 <div className={styles['mod-search']}></div>
+
+                <div className={styles['mod-manually-connect']}>
+                  <div className='bd'>
+                    <div className='btn' onClick={handleOfferModal}>Manually Connect</div>
+                    <div className='btn' onClick={handleAddressModal}>Connect by Address</div>
+                    <div className='btn' onClick={fetchPeers}>update peers</div>
+                    <div className='btn' onClick={handleJoinPublicRoom}>Join Public Channel</div>
+                  </div>
+                </div>
               </>
             ) : null
           }
         </div>
 
         <div className='bd'>
+
+          {
+            onliners.length ?
+            <div className={styles.section} style={{marginBottom: '40px'}}>
+              <div className='hd'>Public</div>
+              <div className='bd'>
+                <ul className='list'>
+                  {
+                    onliners.map((peer) => 
+                      <li key={peer} onClick={() => handleConnectByAddress(peer)}>
+                        <span>{formatAddress(peer)}</span>
+                      </li>)
+                  }
+                </ul>
+              </div>
+            </div>
+            : null
+          }
+
           {
             groups.length ?
             <div className={styles.section} style={{marginBottom: '40px'}}>
@@ -172,10 +177,17 @@ const Home: NextPage = () => {
                     peers.map((peer) => <li key={peer.address} onClick={() => {
                       setActiveChat(peer.address)
 
+                      if (!chatList.includes(peer.address)) {
+                        setChatList([...chatList, `${peer.address}`])
+                      }
+
                       if (!chats.get(peer.address)) {
                         chats.set(peer.address, [])
                       }
-                    }}>{peer.address}</li>)
+                    }}>
+                      <span>{formatAddress(peer.address)}</span>
+                      <span>{peer.state}</span>
+                    </li>)
                   }
                 </ul>
               </div>
@@ -195,28 +207,57 @@ const Home: NextPage = () => {
     const renderHd = () => {
       let hds: Array<React.ReactNode> = []
 
-      chats.forEach((value, key) => {
+      chatList.forEach((key) => {
         hds.push(<div key={key} className={key === activeChat ? 'active contact-item' : 'contact-item'} >
-          <span>{key}</span>
-          <span className='btn-close'>+</span>
+          <span>{formatAddress(key)}</span>
+          <span 
+            className='btn-close'
+            onClick={() => {
+              const list = chatList.filter((item) => item !== key)
+
+              setActiveChat(list.length ? list[0] : null)
+              setChatList(list)
+            }}
+          >+</span>
         </div>)
       })
-
-      hds.push(<div key={1} className="contact-item">test1</div>)
-      hds.push(<div key={2} className="contact-item">test2</div>)
-      hds.push(<div key={3} className="contact-item">test3</div>)
 
       return (
         <>{hds}</>
       )
     } 
 
+    const renderMessages = () => {
+      let messages: Array<React.ReactNode> = []
+
+      if (activeChat && chats.get(activeChat)) {
+        messages = chats.get(activeChat)!.map(({ message, from }, i) => {
+          return (
+            <div 
+              className={`message-item${from === account ? ' me' : ''}`} 
+              key={`${message}-${i}`}
+            >
+              <div className='bd'>
+                <div className="message">
+                  {message}
+                </div>
+              </div>
+            </div>
+          )
+        })
+      }
+
+      return (
+        <>{messages}</>
+      )
+    }
+
     return (
       <div className={styles.center}>
         <div className='contacts-mod'>{renderHd()}</div>
-        <div className='messages-mod'></div>
+        <div className='messages-mod'>{renderMessages()}</div>
         <div className='send-mod'>
-          <input className='input-text' type="text" placeholder='Type message' onChange={handleInputChange} />
+          <input className='input-text' type="text" placeholder='Type message' value={message} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
           <div className='btn-send' onClick={handleSendMessage}>Send</div>
         </div>
       </div>
@@ -241,7 +282,9 @@ const Home: NextPage = () => {
           </div>
         </div>
 
-        <div className={styles['mod-member']}>
+        <div className={styles['mod-member']}></div>
+
+        {/* <div className={styles['mod-member']}>
           <div className={styles.section}>
             <div className='hd'>Moderator</div>
             <div className='bd'>
@@ -264,7 +307,8 @@ const Home: NextPage = () => {
               </ul>
             </div>
           </div>
-        </div>
+        </div> */}
+
       </div>
     )
   }
