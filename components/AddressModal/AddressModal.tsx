@@ -1,7 +1,5 @@
 import React, { useCallback, useState } from 'react'
 
-import { Client, Peer } from 'rings-node'
-
 import Modal, { ModalProps } from '../Modal'
 import ModalActions from '../ModalActions'
 import ModalContent from '../ModalContent'
@@ -11,7 +9,7 @@ import useRings from '../../hooks/useRings';
 
 import styles from './index.module.scss'
 
-const AddressModal: React.FC<ModalProps> = ({ onDismiss, }) => {
+const AddressModal: React.FC<ModalProps> = ({ onDismiss }) => {
   const { connectByAddress, fetchPeers } = useRings()
   const [address, setAddress] = useState<string>('')
 

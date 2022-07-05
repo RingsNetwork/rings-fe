@@ -15,7 +15,7 @@ const useWebsocket = () => {
 
   useEffect(() => {
     if (lastJsonMessage) {
-      console.log(lastJsonMessage)
+      // console.log(lastJsonMessage)
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {
@@ -29,6 +29,9 @@ const useWebsocket = () => {
   }, [lastJsonMessage])
 
   useEffect(() => {
+    // console.log(`joinPublickRoom`, joinPublicRoom)
+    // console.log(`readyState`, readyState)
+    // console.log(`account`, account)
     if (readyState === ReadyState.OPEN && joinPublicRoom && account) {
       sendJsonMessage({
         did: account,
