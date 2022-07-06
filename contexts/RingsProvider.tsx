@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback, createContext, useContext } from 'react'
+import { useEffect, useState, useCallback, createContext } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
 import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from 'rings-node'
-
 export interface Chat_props {
   from: string,
   to: string,
@@ -139,7 +138,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         const sig = new Uint8Array(web3.utils.hexToBytes(signed));
         // console.log(`sig: ${sig.toString()}, len: ${sig.length}`)
 
-        const client = new Client(unsignedInfo, sig, process.env.NEXT_PUBLIC_CLIENT_URL!);
+        const client = new Client(unsignedInfo, sig, process.env.NEXT_PUBLIC_TURN_URL!);
         // console.log(client)
         setClient(client)
 
@@ -177,7 +176,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         const listen = await client.listen(callback)
         console.log(`listen`, listen)
 
-        const transportId = await client.connect_peer_via_http(process.env.NEXT_PUBLIC_SERVER_URL!);
+        const transportId = await client.connect_peer_via_http(process.env.NEXT_PUBLIC_NODE_URL!);
         console.log(`transportId: ${transportId}`)
       }
 
