@@ -44,15 +44,14 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const fetchPeers = useCallback(async () => {
     if (client) {
-      // console.log(`fetch peers`)
+      console.log(`fetch peers`)
       const peers = await client.list_peers()
+      console.log(`peers`, peers)
 
       setPeers(peers.map(({ address, ...rest }: Peer) => ({
         ...rest,
         address: address.startsWith(`0x`) ? address : `0x${address}`,
       })))
-
-      setPeers(peers)
     }
   }, [client])
 
