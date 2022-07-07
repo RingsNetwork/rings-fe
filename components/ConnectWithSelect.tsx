@@ -1,6 +1,7 @@
 import type { Web3ReactHooks } from '@web3-react/core'
 import type { MetaMask } from '@web3-react/metamask'
 import { WalletConnect } from '@web3-react/walletconnect'
+import { Flex, Box } from '@chakra-ui/react'
 
 export function ConnectWithSelect({
   connector,
@@ -16,13 +17,12 @@ export function ConnectWithSelect({
   title: string
 }) {
     return (
-      <div 
-        style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          cursor: 'pointer'
-        }}
+      <Flex 
+        w="100%"
+        p="18px 30px"
+        cursor="pointer"
+        alignItems="center"
+        flexGrow="0"
         onClick={
           isActivating ? undefined : () => {
             connector.activate()
@@ -30,8 +30,8 @@ export function ConnectWithSelect({
           }
         }
       >
-       <div className='wallet-icon'>{icon}</div> 
-       <div className='wallet-title'>{title}</div>
-      </div>
+      <Box w={45} h={45} mr="20px">{icon}</Box> 
+      <Box fontSize="13px" fontWeight="700">{title}</Box>
+    </Flex>
     )
 }

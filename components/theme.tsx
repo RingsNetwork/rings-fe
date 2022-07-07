@@ -1,23 +1,34 @@
-import { useState, useEffect } from 'react'
+import {
+  Box,
+  Flex,
+  useColorMode,
+  useColorModeValue,
+  Text,
+  Button,
+  Center,
+} from '@chakra-ui/react'
+import { FaMoon, FaSun } from 'react-icons/fa'
 
 const ThemeToogle = () => {
-  const [activeTheme, setActiveTheme] = useState(
-    document.body.dataset.theme || 'light'
-  )
-  const inactiveTheme = activeTheme === 'light' ? 'dark' : 'light'
-
-  useEffect(
-    () => {
-      document.body.dataset.theme = activeTheme
-      window.localStorage.setItem('theme', activeTheme)
-    },
-    [activeTheme]
-  )
+  const { toggleColorMode: toggleMode } = useColorMode()
+  const text = useColorModeValue('dark', 'light')
+  const SwitchIcon = useColorModeValue(FaMoon, FaSun)
 
   return (
-    <div onClick={() => setActiveTheme(inactiveTheme)}>
-      {inactiveTheme.toUpperCase()} MODE
-    </div>
+    <Center>
+    <Button onClick={toggleMode}>
+      <Center>
+        <Flex 
+          alignItems='center'
+        >
+            <Box mr="2">
+              <SwitchIcon />
+            </Box>
+            <Text>{text.toUpperCase()} MODE</Text>
+        </Flex>
+      </Center>
+    </Button>
+    </Center>
   )
 }
 

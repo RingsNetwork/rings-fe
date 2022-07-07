@@ -7,6 +7,8 @@ import dynamic from "next/dynamic";
 
 import { format } from 'fecha'
 
+import { Box, Button, Flex, Input } from '@chakra-ui/react';
+
 import useRings from '../hooks/useRings'
 import useModal from '../hooks/useModal'
 import useWebsocket from '../hooks/useWebsocket'
@@ -14,9 +16,11 @@ import useWebsocket from '../hooks/useWebsocket'
 import formatAddress from '../utils/formatAddress';
 
 import OfferModal from '../components/OfferModal'
-import AddressModal from '../components/AddressModal'
+import ConnectByAddress from '../components/ConnectByAddress'
 
 import styles from '../styles/Home.module.scss'
+
+import Card from '../components/Card'
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
@@ -41,11 +45,6 @@ const Home: NextPage = () => {
     'offer'
   )
 
-  const [onPresentAddressModal] = useModal(
-    <AddressModal />,
-    'address'
-  )
-
   useEffect(() => {
     const timer = setInterval(() => {
       setTime(format(new Date(), 'HH:mm:ss'))
@@ -56,9 +55,8 @@ const Home: NextPage = () => {
     }
   }, [])
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(e)
-    setMessage(e.target.value)
+  const handleInputChange = useCallback(({ target: { value } }: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(value)
   }, [])
 
   const handleSendMessage = useCallback(async () => {
@@ -84,10 +82,6 @@ const Home: NextPage = () => {
     [onPresentOfferModal]
   )
 
-  const handleAddressModal = useCallback(() => { 
-    onPresentAddressModal()
-  }, [onPresentAddressModal])
-
   const handleJoinPublicRoom = useCallback(() => {
     if (account) {
       setJoinPublicRoom(true)
@@ -102,9 +96,9 @@ const Home: NextPage = () => {
 
   const renderLeft = () => {
     return (
-      <div className={styles.left}>
-        <div className='hd'>
-          <AccountButton />
+      <Card width="260px" p="15px" height="100%">
+      <Flex height="100%" flexDirection="column" justifyContent="space-between">
+        <Box className='hd'>
           {
             account ? (
               <>
@@ -122,17 +116,18 @@ const Home: NextPage = () => {
                 <div className={styles['mod-manually-connect']}>
                   <div className='bd'>
                     <div className='btn' onClick={handleOfferModal}>Manually Connect</div>
-                    <div className='btn' onClick={handleAddressModal}>Connect by Address</div>
+                    <ConnectByAddress />
                     <div className='btn' onClick={fetchPeers}>update peers</div>
                     <div className='btn' onClick={handleJoinPublicRoom}>Join Public Channel</div>
                   </div>
                 </div>
               </>
-            ) : null
+            ) : 
+            <AccountButton />
           }
-        </div>
+        </Box>
 
-        <div className='bd'>
+        <Box className='bd'>
 
           {
             onliners.length ?
@@ -194,12 +189,14 @@ const Home: NextPage = () => {
             </div>: 
             null
           }
-        </div>
+        </Box>
 
-        <div className='ft'>
+        <Box className='ft'>
           <ThemeToogle />
-        </div>
-      </div>
+        </Box>
+
+      </Flex>
+      </Card>
     )
   }
 
@@ -208,7 +205,7 @@ const Home: NextPage = () => {
       let hds: Array<React.ReactNode> = []
 
       chatList.forEach((key) => {
-        hds.push(<div key={key} className={key === activeChat ? 'active contact-item' : 'contact-item'} >
+        hds.push(<Box key={key} className={key === activeChat ? 'active contact-item' : 'contact-item'} >
           <span>{formatAddress(key)}</span>
           <span 
             className='btn-close'
@@ -219,7 +216,7 @@ const Home: NextPage = () => {
               setChatList(list)
             }}
           >+</span>
-        </div>)
+        </Box>)
       })
 
       return (
@@ -233,16 +230,16 @@ const Home: NextPage = () => {
       if (activeChat && chats.get(activeChat)) {
         messages = chats.get(activeChat)!.map(({ message, from }, i) => {
           return (
-            <div 
+            <Box 
               className={`message-item${from === account ? ' me' : ''}`} 
               key={`${message}-${i}`}
             >
-              <div className='bd'>
-                <div className="message">
+              <Box className='bd'>
+                <Box className="message">
                   {message}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           )
         })
       }
@@ -253,19 +250,22 @@ const Home: NextPage = () => {
     }
 
     return (
-      <div className={styles.center}>
-        <div className='contacts-mod'>{renderHd()}</div>
-        <div className='messages-mod'>{renderMessages()}</div>
-        <div className='send-mod'>
-          <input className='input-text' type="text" placeholder='Type message' value={message} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
-          <div className='btn-send' onClick={handleSendMessage}>Send</div>
-        </div>
-      </div>
+      <Card p="10px" height="100%" flexGrow="1" m="0 10px">
+        <Flex  height="100%" justifyContent="space-between" flexDirection="column">
+          <Box className='contacts-mod'>{renderHd()}</Box>
+          <Box className='messages-mod'>{renderMessages()}</Box>
+          <Flex>
+            <Input disabled={!account} fontSize={10} mr="15px" type="text" placeholder='Type message' value={message} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+            <Button disabled={!account} onClick={handleSendMessage}>Send</Button>
+          </Flex>
+        </Flex>
+      </Card>
     )
   }
   const renderRight = () => {
     return (
-      <div className={styles.right}>
+      <Card width="240px" height="100%">
+      <Flex height="100%" flexDirection="column" justifyContent="space-between">
         <div className={styles['mod-clock']}>
           {time}
         </div>
@@ -309,25 +309,25 @@ const Home: NextPage = () => {
           </div>
         </div> */}
 
-      </div>
+      </Flex>
+      </Card>
     )
   }
 
   return (
-    <div className={styles.container}>
+    <Box p="10px" height="100vh">
       <Head>
         <title>Create Next App</title>
         <meta name="description" content="Generated by create next app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className={styles.main}>
+      <Flex justifyContent="space-between" height="100%">
         {renderLeft()}
         {renderCenter()}
         {renderRight()}
-      </div>
-        
-    </div>
+      </Flex>
+    </Box>
   )
 }
 
