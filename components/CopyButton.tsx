@@ -10,6 +10,7 @@ function CopyButton({ code, ...props }: CopyButtonProps) {
   const { hasCopied, onCopy } = useClipboard(code)
 
   return (
+    // @ts-ignore
     <Flex
       alignItems="center"
       cursor="pointer"

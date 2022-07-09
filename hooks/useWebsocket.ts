@@ -16,6 +16,7 @@ const useWebsocket = () => {
   useEffect(() => {
     if (lastJsonMessage) {
       // console.log(lastJsonMessage)
+      // @ts-ignore
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {

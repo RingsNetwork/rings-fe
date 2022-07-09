@@ -16,7 +16,6 @@ import {
   Center,
   Tabs, TabList, TabPanels, Tab, TabPanel,
   Textarea,
-  Flex
 } from '@chakra-ui/react'
 
 import useRings from '../hooks/useRings';
@@ -37,7 +36,7 @@ const ConnectByManual: React.FC = () => {
   const handleCreateOffer = useCallback(async () => {
     const offer = await createOffer()
 
-    console.log(`offer`, offer)
+    //@ts-ignore
     setOffer(offer)
   }, [createOffer])
 
@@ -45,6 +44,7 @@ const ConnectByManual: React.FC = () => {
     if (ice) {
       const answer = await answerOffer(ice)
 
+      //@ts-ignore
       setAnswer(answer)
 
       await fetchPeers() 
@@ -53,7 +53,7 @@ const ConnectByManual: React.FC = () => {
 
   const handleAcceptAnswer = useCallback(async () => {
     if (offer && offer.transport_id) {
-      const res = await acceptOfferAnswer(offer.transport_id, acceptAnswer)
+      await acceptOfferAnswer(offer.transport_id, acceptAnswer)
 
       onClose()
       fetchPeers()

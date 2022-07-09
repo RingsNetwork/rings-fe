@@ -31,6 +31,7 @@ export default function NetworkCard(){
   return (
     <div>
       <ConnectWithSelect
+        // @ts-ignore
         connector={network}
         chainId={chainId}
         isActivating={isActivating}
