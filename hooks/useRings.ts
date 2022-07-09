@@ -13,6 +13,12 @@ const useRings = () => {
     createOffer,
     answerOffer,
     acceptAnswer,
+    turnUrl,
+    setTurnUrl,
+    nodeUrl,
+    setNodeUrl,
+    status,
+    setStatus
   } = useContext(RingsContext)
 
   return {
@@ -25,6 +31,12 @@ const useRings = () => {
     createOffer,
     answerOffer,
     acceptAnswer,
+    turnUrl,
+    setTurnUrl,
+    nodeUrl,
+    setNodeUrl,
+    status,
+    setStatus
   }
 }
 

@@ -1,7 +1,7 @@
-// pages/_document.js
-
+import { ColorModeScript } from '@chakra-ui/react'
 import Document, { Html, Head, Main, NextScript } from 'next/document'
 
+import theme from '../theme'
 class MyDocument extends Document {
   static async getInitialProps(ctx: any) {
     const initialProps = await Document.getInitialProps(ctx)
@@ -9,22 +9,11 @@ class MyDocument extends Document {
   }
 
   render() {
-    const setInitialTheme = `
-      function getUserPreference() {
-        if(window.localStorage.getItem('theme')) {
-          return window.localStorage.getItem('theme')
-        }
-        return window.matchMedia('(prefers-color-scheme: dark)').matches 
-          ? 'dark' 
-          : 'light'
-      }
-      document.body.dataset.theme = getUserPreference();
-    `
     return (
       <Html>
         <Head />
         <body>
-          <script dangerouslySetInnerHTML={{ __html: setInitialTheme }} />
+          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
           <Main />
           <NextScript />
         </body>

@@ -1,30 +1,57 @@
 import React, { useCallback } from 'react'
-import { useWeb3React } from '@web3-react/core'
+import { 
+  Box, 
+  Button, 
+  Text,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Center,
+} from '@chakra-ui/react'
 
-import useModal from '../hooks/useModal'
-import WalletProviderModal from './WalletModal'
+import WalletConnectCard from './connectors/WalletConnectCard'
+import MetaMaskCard from './connectors/MetaMaskCard'
 
-interface AccountButtonProps {}
+const AccountButton: React.FC = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
-const AccountButton: React.FC<AccountButtonProps> = (props) => {
-  const [onPresentWalletProviderModal] = useModal(
-    <WalletProviderModal />,
-    'provider'
-  )
-
-  const { account } = useWeb3React()
-
-  const handleUnlockClick = useCallback(
+  const handleConnect = useCallback(
     () => {
-      onPresentWalletProviderModal()
+      onClose()
     },
-    [onPresentWalletProviderModal]
+    [onClose]
   )
 
   return (
-    <div>
-      {!account ? <div onClick={handleUnlockClick}>Connect Wallet</div> : null}
-    </div>
+    <Center>
+      <Box>
+        <Button cursor="pointer" onClick={onOpen}>Connect Wallet</Button>
+      </Box>
+
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+
+        <ModalContent>
+          <ModalHeader>
+            <Text fontSize="14px">Select a wallet provider</Text>
+          </ModalHeader>
+
+          <ModalBody>
+            <MetaMaskCard onConnect={handleConnect} />
+            <WalletConnectCard onConnect={handleConnect} />
+          </ModalBody>
+
+          <ModalFooter>
+            <ModalCloseButton onClick={onClose} />
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Center>
   )
 }
 
