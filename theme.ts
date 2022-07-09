@@ -46,6 +46,7 @@ const Modal = {
   baseStyle: ({ colorMode }: StyleFunctionProps) => ({
     overlay: {
       // bg: colors[colorMode].overlay,
+      backdropFilter: 'blur(3px)',
     },
     dialog: {
       bg: colors[colorMode].modal,
@@ -76,6 +77,12 @@ const customTheme = extendTheme({
         fontSize: '10px',
         transition: 'background 0.25s ease-in-out',
       },
+      ul: {
+        listStyle: 'none'
+      },
+      li: {
+        listStyle: 'none'
+      }
     },
   },
   components: {
