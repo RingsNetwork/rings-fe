@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { TransportAndIce } from 'rings-node';
+import { TransportAndIce } from '@ringsnetwork/rings-node';
 
 import { 
   Box, 

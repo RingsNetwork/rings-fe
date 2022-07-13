@@ -20,7 +20,7 @@ const useWebsocket = () => {
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {
-        setOnliners((prev) => [...prev, did])
+        setOnliners((prev) => [...prev.filter(peer => peer !== did), did])
       } else if (data === 'leave') {
         setOnliners((prev) => prev.filter(o => o !== did))
       } else if (data.list) {

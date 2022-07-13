@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, createContext } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
-import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from 'rings-node'
+import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
 export interface Chat_props {
   from: string,
   to: string,
@@ -63,23 +63,32 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     if (client) {
       const peers = await client.list_peers()
 
-      setPeers(peers.map(({ address, ...rest }: Peer) => ({
-        ...rest,
-        address: address.startsWith(`0x`) ? address : `0x${address}`,
-      })))
+      setPeers([
+        // {
+        //   state: 'connected',
+        //   address: '0x0000000000000000000000000000000000000000',
+        // }, 
+        ...peers.map(({ address, ...rest }: Peer) => ({
+          ...rest,
+          address: address.startsWith(`0x`) ? address : `0x${address}`,
+        }))
+      ])
     }
   }, [client])
 
   const sendMessage = useCallback(async (to: string, message: string) => {
     if (client && peers.length) {
       await client.send_message(to, new TextEncoder().encode(message))
+
       chats.set(to, [...chats.get(to)!, { from: account!, to, message }])
     }
   }, [client, peers, chats, account])
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
+      console.log(`connect by address: ${address}`)
       await client.connect_with_address(address)
+      console.log(`connected`)
     }
   }, [client])
 
@@ -145,7 +154,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (account && provider && wasm && turnUrl && nodeUrl) {
       const initClient = async () => {
-        debug(false)
+        debug(true)
         setStatus('connecting')
         
         const unsignedInfo = new UnsignedInfo(account);
@@ -154,7 +163,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         const signed = await signer.signMessage(unsignedInfo.auth);
         const sig = new Uint8Array(web3.utils.hexToBytes(signed));
 
-        const client = new Client(unsignedInfo, sig, turnUrl);
+        const client = await Client.new_client(unsignedInfo, sig, turnUrl);
         setClient(client)
 
         const callback = new MessageCallbackInstance(

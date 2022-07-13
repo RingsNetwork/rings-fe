@@ -56,9 +56,9 @@ const Setting: React.FC = () => {
 
   return (
     <>
-      <Box cursor="pointer" onClick={onOpen}>
-        <Icon as={MdSettings} boxSize="12px" />
-      </Box>
+      <Center cursor="pointer" onClick={onOpen}>
+        <Icon as={MdSettings} boxSize="14px" />
+      </Center>
 
       <Modal isOpen={isOpen} onClose={handleClose} isCentered>
         <ModalOverlay />

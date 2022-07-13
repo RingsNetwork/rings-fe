@@ -7,7 +7,30 @@ import dynamic from "next/dynamic";
 
 import { format } from 'fecha'
 
-import { Box, Button, Flex, Input, CloseButton, Tabs, TabList, TabPanels, Tab, TabPanel, IconButton } from '@chakra-ui/react';
+import { 
+  Box, 
+  Button, 
+  Flex, 
+  Input, 
+  Tabs, 
+  TabList, 
+  TabPanels, 
+  Tab, 
+  TabPanel, 
+  IconButton, 
+  Center, 
+  Tooltip,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverFooter,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverAnchor,
+  Portal,
+} from '@chakra-ui/react';
 import { MdOutlineClose } from 'react-icons/md';
 
 import useRings from '../hooks/useRings'
@@ -28,7 +51,7 @@ const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
   const { account } = useWeb3React()
-  const { chats, peers, fetchPeers, sendMessage, connectByAddress, status } = useRings()
+  const { chats, peers, fetchPeers, sendMessage, connectByAddress } = useRings()
   const { setJoinPublicRoom, onliners } = useWebsocket()
 
   const [groups, setGroups] = useState<any[]>([])
@@ -39,6 +62,7 @@ const Home: NextPage = () => {
   const [message, setMessage] = useState<string>('')
 
   const [sending, setSending] = useState<boolean>(false)
+  const [connecting, setConnecting] = useState<boolean>(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -77,121 +101,186 @@ const Home: NextPage = () => {
   }, [account, setJoinPublicRoom])
 
   const handleConnectByAddress = useCallback(async (address: string) => {
-    if (address) {
-      await connectByAddress(address)
+    if (!address || connecting) {
+      return
     }
-  }, [connectByAddress])
+
+    try {
+      setConnecting(true)
+      await connectByAddress(address)
+      setConnecting(false)
+    } catch (e) {
+      console.error(e)
+      setConnecting(false)
+    }
+  }, [connectByAddress, connecting])
 
   const renderLeft = () => {
     return (
-      <Card width="260px" p="15px" height="100%">
-      <Flex height="100%" flexDirection="column" justifyContent="space-between">
-        <Box>
+      <Card 
+        width={{
+          base: '100%',
+          sm: '260px'
+        }} 
+        p="15px" 
+        height={{
+          base: "auto",
+          sm: "100%",
+        }}
+      >
+        <Flex height="100%" flexDirection="column" justifyContent="space-between">
           <Box>
-            {
-              account ? (
-                <>
-                  <Flex mb="40px" alignItems="center" justifyContent="space-between">
+            <Box>
+              {
+                account ? (
+                  <>
+                    <Flex mb="40px" alignItems="center" justifyContent="space-between">
+                      <Box>
+                        <Box fontSize="14px">{formatAddress(account)}</Box>
+                      </Box>
+                      <Flex
+                        alignItems="center"
+                      >
+                        <Box
+                          display={{
+                            base: 'block',
+                            sm: 'none'
+                          }} 
+                          mr="10px"
+                        >
+                          <ThemeToogle />
+                        </Box>
+                        <Setting />
+                      </Flex>
+                    </Flex>
+
                     <Box>
-                      <Box fontSize="14px">{formatAddress(account)}</Box>
+                      <Box mb="40px">
+                        <Box mb="15px">
+                          <ConnectByManual />
+                        </Box>
+                        {/* <Box mb="15px">
+                          <ConnectByAddress />
+                        </Box>
+                        <Box mb="15px" cursor="pointer" onClick={fetchPeers}>
+                          update peers
+                        </Box> */}
+                      </Box>
                     </Box>
-                    <Box>
-                      <Setting />
-                    </Box>
-                  </Flex>
+                  </>
+                ) : 
+                <Flex justifyContent={{
+                  base: 'space-between',
+                  sm: 'space-around',
+                }}>
+                  <AccountButton />
+                  <Center
+                    alignItems="center"
+                    display={{
+                      base: 'flex',
+                      sm: 'none'
+                    }} 
+                  >
+                    <ThemeToogle />
+                  </Center>
+                </Flex>
+              }
+            </Box>
+
+            <Box>
+              { account ?
+                <Box mb="40px">
+                  <Flex mb="15px" color="#757D8A" justifyContent="space-between" alignItems="center">
+                    <Box fontSize={10}>Plublic</Box>
+                    {
+                      account && !onliners.find((peer) => peer === account) ?
+                      <Box cursor="pointer" onClick={handleJoinPublicRoom}>
+                        Join
+                      </Box> :
+                      null
+                    }
+                  </Flex> 
 
                   <Box>
-                    <Box>
-                      <Box mb="15px">
-                        <ConnectByManual />
-                      </Box>
-                      <Box mb="15px">
-                        <ConnectByAddress />
-                      </Box>
-                      <Box mb="15px" cursor="pointer" onClick={fetchPeers}>
-                        update peers
-                      </Box>
-                      <Box mb="15px" cursor="pointer" onClick={handleJoinPublicRoom}>
-                        Join Public Channel
-                      </Box>
-                    </Box>
-                  </Box>
-                </>
-              ) : 
-              <AccountButton />
-            }
-          </Box>
-
-          <Box>
-
-            {
-              onliners.length ?
-              <Box mb="40px">
-                <Box fontSize={10} mb="15px" color="#757D8A">Plublic</Box>
-                <Box>
                     {
                       onliners.map((peer) => 
-                        <Flex mb="20px" cursor={ peer === account ? '' : 'pointer'} justifyContent="space-between" alignItems="center" key={peer} onClick={() => {
-                          if (peer === account) {
-                            return
-                          }
-
-                          handleConnectByAddress(peer)
-                        }}>
-                          <Box>{formatAddress(peer)}</Box>
-                          { peer === account ? <Box>You</Box> : null }
-                        </Flex>)
-                    }
-                </Box>
-              </Box>
-              : null
-            }
-
-            {
-              peers.length ?
-              <Box>
-                <Box fontSize={10} mb="15px" color="#757D8A">Contact</Box>
-                <Box>
-                    {
-                      peers.map((peer) => (
                         <Flex 
                           mb="20px" 
-                          cursor={ peer.state === 'connected' ? 'pointer' : ''}
+                          cursor={ peer === account ? '' : 'pointer'} 
                           justifyContent="space-between" 
                           alignItems="center" 
-                          key={peer.address} 
-                          onClick={() => {
-                            if (peer.state !== 'connected') {
-                              return
-                            }
-
-                            setActiveChat(peer.address)
-
-                            if (!chatList.includes(peer.address)) {
-                              setChatList([...chatList, `${peer.address}`])
-                            }
-
-                            if (!chats.get(peer.address)) {
-                              chats.set(peer.address, [])
-                            }
-                        }}>
-                          <Box>{formatAddress(peer.address)}</Box>
-                          <Box>{peer.state}</Box>
-                        </Flex>
-                      ))
+                          key={peer} 
+                          onClick={() => handleConnectByAddress(peer)}
+                        >
+                          {
+                            peer !== account ?
+                            <Tooltip label="add to contacts">
+                              <Box>{formatAddress(peer)}</Box>
+                            </Tooltip>:
+                            <Box>{formatAddress(peer)}</Box>
+                          }
+                          {
+                            peer === account ?
+                            <Box>You</Box> :
+                            connecting ?
+                            <Box>Connecting...</Box> :
+                            null
+                          }
+                        </Flex>)
                     }
+                  </Box>
                 </Box>
-              </Box>: 
-              null
-            }
+                : null
+              }
+
+              {
+                peers.length ?
+                <Box>
+                  <Box fontSize={10} mb="15px" color="#757D8A">Contact</Box>
+                  <Box>
+                      {
+                        peers.map((peer) => (
+                          <Flex 
+                            mb="20px" 
+                            cursor={ peer.state === 'connected' ? 'pointer' : ''}
+                            justifyContent="space-between" 
+                            alignItems="center" 
+                            key={peer.address} 
+                            onClick={() => {
+                              if (peer.state !== 'connected') {
+                                return
+                              }
+
+                              setActiveChat(peer.address)
+
+                              if (!chatList.includes(peer.address)) {
+                                setChatList([...chatList, `${peer.address}`])
+                              }
+
+                              if (!chats.get(peer.address)) {
+                                chats.set(peer.address, [])
+                              }
+                          }}>
+                            <Box>{formatAddress(peer.address)}</Box>
+                            <Box>{peer.state}</Box>
+                          </Flex>
+                        ))
+                      }
+                  </Box>
+                </Box>: 
+                null
+              }
+            </Box>
           </Box>
-        </Box>
 
-        <Box className='ft'>
-          <ThemeToogle />
-        </Box>
+          <Box className='ft' display={{
+            base: 'none',
+            sm: 'block',
+          }}>
+            <ThemeToogle />
+          </Box>
 
-      </Flex>
+        </Flex>
       </Card>
     )
   }
@@ -200,8 +289,8 @@ const Home: NextPage = () => {
     const renderHd = () => {
       let hds: Array<React.ReactNode> = []
 
-      chatList.forEach((key) => {
-        hds.push(<Tab key={key}>
+      chatList.forEach((key, i) => {
+        hds.push(<Tab key={i}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
             <Box>{formatAddress(key)}</Box>
             <Box
@@ -257,10 +346,19 @@ const Home: NextPage = () => {
     }
 
     return (
-      <Card p="10px" height="100%" flexGrow="1" m="0 10px">
+      <Card p="10px" height="100%" flexGrow="1" m={{
+        base: '10px 0',
+        sm: "0 10px", 
+      }}>
         <Flex height="100%" justifyContent="space-between" flexDirection="column">
           <Box>
-            <Tabs variant='enclosed'>
+            <Tabs 
+              variant='enclosed' 
+              index={chatList.findIndex(key => key === activeChat)} 
+              onChange={(index) => {
+                setActiveChat(chatList[index])
+              }}
+            >
               {renderHd()}
             </Tabs>
           </Box>
@@ -277,7 +375,16 @@ const Home: NextPage = () => {
   }
   const renderRight = () => {
     return (
-      <Box width="240px" height="100%">
+      <Box 
+        width={{
+          base: '100%',
+          sm: "240px",
+        }} 
+        height={{
+          base: 'auto',
+          sm: "100%",
+        }}
+      >
         <Flex height="100%" flexDirection="column">
           <Card>
             <Flex p="15px" fontSize="26px" justifyContent="space-around" alignItems="center">
@@ -313,7 +420,16 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Flex justifyContent="space-between" height="100%">
+      <Flex 
+        justifyContent={{
+          base: "space-between"
+        }} 
+        flexDir={{
+          base: 'column',
+          sm: 'row'
+        }}
+        height="100%"
+      >
         {renderLeft()}
         {renderCenter()}
         {renderRight()}

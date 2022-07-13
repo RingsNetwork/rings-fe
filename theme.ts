@@ -6,6 +6,14 @@ const config: ThemeConfig = {
   useSystemColorMode: false,
 }
 
+// const breakpoints = {
+//   sm: '320px',
+//   md: '768px',
+//   lg: '960px',
+//   xl: '1200px',
+//   '2xl': '1536px',
+// }
+
 const colors = {
   dark: {
     border: 'rgba(255, 255, 255, 0.2)',
@@ -91,6 +99,7 @@ const customTheme = extendTheme({
     Modal,
     Input
   },
+  // breakpoints
 })
 
 export default customTheme

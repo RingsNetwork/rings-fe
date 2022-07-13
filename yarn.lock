@@ -1322,6 +1322,11 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.5.tgz#db5a11bf66bdab39569719555b0f76e138d7bd64"
   integrity sha512-9X2obfABZuDVLCgPK9aX0a/x4jaOEweTTWE2+9sr0Qqqevj2Uv5XorvusThmc9XGYpS9yI+fhh8RTafBtGposw==
 
+"@ringsnetwork/rings-node@0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@ringsnetwork/rings-node/-/rings-node-0.2.1.tgz#85dfc75103971c36a48c015155a7c51362c32aa5"
+  integrity sha512-lsC9q//IPbWfLmrrX3QO9k7MWJVwunIZDf6BdrvOx5f6MBcmbKdpWgJEJdL2UCcabCsRtZ1F8zFcmx8zf4GrMA==
+
 "@rushstack/eslint-patch@1.0.8":
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/@rushstack/eslint-patch/-/eslint-patch-1.0.8.tgz#be3e914e84eacf16dbebd311c0d0b44aa1174c64"

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003",
-    "build": "next build",
+    "build": "next build && next export",
     "start": "next start",
     "lint": "next lint"
   },
@@ -12,6 +12,7 @@
     "@chakra-ui/react": "^2.2.1",
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",
+    "@ringsnetwork/rings-node": "0.2.1",
     "@walletconnect/ethereum-provider": "^1.7.7",
     "@web3-react/core": "8.0.23-beta.0",
     "@web3-react/metamask": "8.0.19-beta.0",
