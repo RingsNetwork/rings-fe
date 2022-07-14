@@ -16,20 +16,8 @@ import {
   TabList, 
   TabPanels, 
   Tab, 
-  TabPanel, 
-  IconButton, 
   Center, 
   Tooltip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
-  PopoverAnchor,
-  Portal,
 } from '@chakra-ui/react';
 import { MdOutlineClose } from 'react-icons/md';
 
@@ -95,6 +83,7 @@ const Home: NextPage = () => {
   }, [message, activeChat, sending, sendMessage])
 
   const handleJoinPublicRoom = useCallback(() => {
+    console.log(`handleJoinPublicRoom`)
     if (account) {
       setJoinPublicRoom(true)
     }

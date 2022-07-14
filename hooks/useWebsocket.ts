@@ -30,9 +30,11 @@ const useWebsocket = () => {
   }, [lastJsonMessage])
 
   useEffect(() => {
-    // console.log(`joinPublickRoom`, joinPublicRoom)
-    // console.log(`readyState`, readyState)
-    // console.log(`account`, account)
+    console.group(`WebSocket`)
+    console.log(`joinPublickRoom`, joinPublicRoom)
+    console.log(`readyState`, readyState)
+    console.log(`account`, account)
+    console.groupEnd()
     if (readyState === ReadyState.OPEN && joinPublicRoom && account) {
       sendJsonMessage({
         did: account,
