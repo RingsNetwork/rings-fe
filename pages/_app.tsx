@@ -1,6 +1,5 @@
 import { ChakraProvider } from '@chakra-ui/react'
 
-import ModalsProvider from '../contexts/Modals'
 import Web3Provider from '../contexts/Web3Provider'
 import RingsProvider from '../contexts/RingsProvider'
 
@@ -15,9 +14,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ChakraProvider theme={theme}>
       <Web3Provider>
         <RingsProvider>
-          <ModalsProvider>
-              <Component {...pageProps} />
-          </ModalsProvider>
+          <Component {...pageProps} />
         </RingsProvider>
       </Web3Provider>
     </ChakraProvider>

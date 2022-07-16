@@ -33,38 +33,73 @@ const ConnectByManual: React.FC = () => {
   const [answer, setAnswer] = useState<TransportAndIce | null>(null)
   const [acceptAnswer, setAcceptAnswer] = useState('')
 
-  const handleCreateOffer = useCallback(async () => {
-    const offer = await createOffer()
+  const [offerLoading, setOfferLoading] = useState(false)
+  const [acceptLoading, setAcceptLoading] = useState(false)
+  const [answerLoading, setAnswerLoading] = useState(false)
 
-    //@ts-ignore
-    setOffer(offer)
+  const handleCreateOffer = useCallback(async () => {
+    try {
+      setOfferLoading(true)
+      const offer = await createOffer()
+      //@ts-ignore
+      setOffer(offer)
+      setOfferLoading(false)
+    } catch (e) {
+      console.error(e)
+      setOfferLoading(false)
+    }
   }, [createOffer])
 
   const handleAnswerOffer = useCallback(async () => {
     if (ice) {
-      const answer = await answerOffer(ice)
+      try {
+        setAnswerLoading(true)
+        const answer = await answerOffer(ice)
 
-      //@ts-ignore
-      setAnswer(answer)
-
-      await fetchPeers() 
+        //@ts-ignore
+        setAnswer(answer)
+        setAnswerLoading(false)
+        fetchPeers() 
+      } catch (e) {
+        console.error(e)
+        setAnswerLoading(false)
+      }
     }
   }, [ice, fetchPeers, answerOffer])
 
   const handleAcceptAnswer = useCallback(async () => {
     if (offer && offer.transport_id) {
-      await acceptOfferAnswer(offer.transport_id, acceptAnswer)
+      try {
+        setAcceptLoading(true)
+        await acceptOfferAnswer(offer.transport_id, acceptAnswer)
 
-      onClose()
-      fetchPeers()
+        setAcceptLoading(false)
+        onClose()
+        fetchPeers()
+      } catch (e) {
+        console.error(e)
+        setAcceptLoading(false)
+      }
     }
   }, [offer, acceptAnswer, fetchPeers, onClose, acceptOfferAnswer])
+
+  const handleClose = useCallback(() => {
+    setOffer(null)
+    setAcceptAnswer('')
+    setAnswer(null)
+    setIce('')
+    setOfferLoading(false)
+    setAcceptLoading(false)
+    setAnswerLoading(false)
+
+    onClose()
+  }, [onClose])
 
   return (
     <>
       <Box cursor="pointer" onClick={onOpen}>Manually Connect</Box>
 
-      <Modal isOpen={isOpen} onClose={onClose} isCentered> 
+      <Modal isOpen={isOpen} onClose={handleClose} isCentered> 
         <ModalOverlay />
 
         <ModalContent>
@@ -86,7 +121,7 @@ const ConnectByManual: React.FC = () => {
                       <Textarea fontSize={10} isReadOnly size="lg" value={offer && offer.ice ? offer.ice : ''} />
                       <Box mt="15px">
                         <Center>
-                          <Button onClick={handleCreateOffer}>Create Offer</Button>
+                          <Button isLoading={offerLoading} onClick={handleCreateOffer}>Create Offer</Button>
                           <CopyButton ml="15px" code={offer && offer.ice ? offer.ice : ''} />
                         </Center>
                       </Box>
@@ -96,7 +131,7 @@ const ConnectByManual: React.FC = () => {
                       <Textarea fontSize={10} onChange={({target: {value}}) => setAcceptAnswer(value)} value={acceptAnswer} />
                       <Box mt="15px">
                         <Center>
-                          <Button onClick={handleAcceptAnswer}>Accept Answer</Button>
+                          <Button isLoading={acceptLoading} onClick={handleAcceptAnswer}>Accept Answer</Button>
                         </Center>
                       </Box>
                     </Box>
@@ -109,7 +144,7 @@ const ConnectByManual: React.FC = () => {
                       <Textarea fontSize={10} onChange={({target: {value}}) => setIce(value)} value={ice} />
                       <Box mt="15px">
                         <Center>
-                          <Button onClick={handleAnswerOffer}>Answer Offer</Button>
+                          <Button isLoading={answerLoading} onClick={handleAnswerOffer}>Answer Offer</Button>
                         </Center>
                       </Box>
                     </Box>
@@ -133,7 +168,7 @@ const ConnectByManual: React.FC = () => {
           </ModalBody>
 
           <ModalFooter>
-            <ModalCloseButton onClick={onClose} />
+            <ModalCloseButton onClick={handleClose} />
           </ModalFooter>
         </ModalContent>
       </Modal>

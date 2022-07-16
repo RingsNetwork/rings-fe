@@ -14,7 +14,6 @@ import {
   Input, 
   Tabs, 
   TabList, 
-  TabPanels, 
   Tab, 
   Center, 
   Tooltip,
@@ -90,7 +89,7 @@ const Home: NextPage = () => {
   }, [account, setJoinPublicRoom])
 
   const handleConnectByAddress = useCallback(async (address: string) => {
-    if (!address || connecting) {
+    if (!address || connecting || address === account) {
       return
     }
 
@@ -102,7 +101,7 @@ const Home: NextPage = () => {
       console.error(e)
       setConnecting(false)
     }
-  }, [connectByAddress, connecting])
+  }, [connectByAddress, connecting, account])
 
   const renderLeft = () => {
     return (
