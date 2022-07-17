@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useWeb3React } from '@web3-react/core'
 
 import type { NextPage } from 'next'
@@ -51,6 +51,11 @@ const Home: NextPage = () => {
   const [sending, setSending] = useState<boolean>(false)
   const [connecting, setConnecting] = useState<boolean>(false)
 
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [inputing, setInputing] = useState(false)
+
+  const messagesRef = useRef<HTMLDivElement | null>(null)
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTime(format(new Date(), 'HH:mm:ss'))
@@ -61,10 +66,21 @@ const Home: NextPage = () => {
     }
   }, [])
 
-  const handleInputChange = useCallback(({ target: { value } }: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(value)
+  const handleComposition = useCallback(({ type, target: { value }}: React.ChangeEvent<HTMLInputElement>) => {
+    if (type === "compositionstart") {
+      setInputing(true)
+    } else if (type === "compositionend") {
+      setInputing(false)
+      setMessage(value)
+    }  
   }, [])
 
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!inputing) {
+      setMessage(e.target.value)
+    }
+  }, [inputing])
+  
   const handleSendMessage = useCallback(async () => {
     if (sending || !message || !activeChat) {
       return false
@@ -76,6 +92,11 @@ const Home: NextPage = () => {
 
       setMessage('')
       setSending(false)
+      if (inputRef.current) {
+        inputRef.current.value = ''
+      }
+
+      messagesRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
       setSending(false)
     }
@@ -102,6 +123,12 @@ const Home: NextPage = () => {
       setConnecting(false)
     }
   }, [connectByAddress, connecting, account])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSendMessage()
+    }
+  }, [handleSendMessage])
 
   const renderLeft = () => {
     return (
@@ -350,11 +377,24 @@ const Home: NextPage = () => {
               {renderHd()}
             </Tabs>
           </Box>
-          <Card flexGrow="1" mb="10px" borderTop="none" p="15px">
-            <Box className='messages-mod'>{renderMessages()}</Box>
+          <Card flexGrow="1" mb="10px" borderTop="none" p="15px" overflowY="auto">
+            <Box pb="50px">{renderMessages()}</Box>
+            <Box w="100%" h="50px" ref={messagesRef} />
           </Card>
           <Flex>
-            <Input disabled={!account || !activeChat} fontSize={10} mr="15px" type="text" placeholder='Type message' value={message} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+            <Input 
+              ref={inputRef}
+              disabled={!account || !activeChat} 
+              fontSize={10} 
+              mr="15px" 
+              type="text" 
+              placeholder='Type message' 
+              // value={message} 
+              onChange={handleInputChange} 
+              onKeyDown={handleKeyDown} 
+              onCompositionStart={handleComposition}
+              onCompositionEnd={handleComposition}
+            />
             <Button disabled={!account || !activeChat || !message} isLoading={sending} onClick={handleSendMessage}>Send</Button>
           </Flex>
         </Flex>
