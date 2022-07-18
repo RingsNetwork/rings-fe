@@ -13,12 +13,12 @@ const useWebsocket = () => {
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
-    // {
-    //   shouldReconnect: (closeEvent) => true, //didUnmount.current === false,
-    //   retryOnError: true,
-    //   reconnectAttempts: 10,
-    //   reconnectInterval: 3000,
-    // }
+    {
+      shouldReconnect: (closeEvent) => didUnmount.current === false,
+      retryOnError: true,
+      reconnectAttempts: 10,
+      reconnectInterval: 3000,
+    }
   );
 
   useEffect(() => {
