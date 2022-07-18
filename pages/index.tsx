@@ -392,7 +392,9 @@ const Home: NextPage = () => {
               // value={message} 
               onChange={handleInputChange} 
               onKeyDown={handleKeyDown} 
+              // @ts-ignore
               onCompositionStart={handleComposition}
+              // @ts-ignore
               onCompositionEnd={handleComposition}
             />
             <Button disabled={!account || !activeChat || !message} isLoading={sending} onClick={handleSendMessage}>Send</Button>
