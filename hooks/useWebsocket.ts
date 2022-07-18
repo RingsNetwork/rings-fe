@@ -13,12 +13,12 @@ const useWebsocket = () => {
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
-    {
-      shouldReconnect: (closeEvent) => true, //didUnmount.current === false,
-      retryOnError: true,
-      reconnectAttempts: 10,
-      reconnectInterval: 3000,
-    }
+    // {
+    //   shouldReconnect: (closeEvent) => true, //didUnmount.current === false,
+    //   retryOnError: true,
+    //   reconnectAttempts: 10,
+    //   reconnectInterval: 3000,
+    // }
   );
 
   useEffect(() => {
@@ -45,6 +45,7 @@ const useWebsocket = () => {
 
   useEffect(() => {
     console.group(`WebSocket`)
+    console.log(`time`, (new Date()).toLocaleTimeString())
     console.log(`joinPublickRoom`, joinPublicRoom)
     console.log(`readyState`, readyState)
     console.log(`account`, account)
