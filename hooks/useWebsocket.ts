@@ -1,8 +1,10 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 
 const useWebsocket = () => {
+  const didUnmount = useRef(false)
+
   const { account } = useWeb3React()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
@@ -10,8 +12,20 @@ const useWebsocket = () => {
   const [onliners, setOnliners] = useState<string[]>([])
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
-    socketUrl
+    socketUrl,
+    {
+      shouldReconnect: (closeEvent) => true, //didUnmount.current === false,
+      retryOnError: true,
+      reconnectAttempts: 10,
+      reconnectInterval: 3000,
+    }
   );
+
+  useEffect(() => {
+    return () => {
+      didUnmount.current = true;
+    };
+  }, [])
 
   useEffect(() => {
     if (lastJsonMessage) {
