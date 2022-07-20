@@ -33,7 +33,8 @@ interface PeerMapProps {
   address: string,
   state: string | undefined,
   transport_id: string,
-  hasNewMessage: boolean
+  hasNewMessage: boolean,
+  name: string,
 }
 
 export const RingsContext = createContext<RingsContext>({
@@ -79,19 +80,37 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       setPeers([
         ...peers.map(({ address, ...rest }: Peer) => ({
           ...rest,
-          address: address.startsWith(`0x`) ? address : `0x${address}`,
+          address: address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase(),
         }))
       ])
     }
   }, [client])
 
+  const resolveENS = useCallback(async (peers: Peer[]) => {
+    if (provider) {
+      peers.forEach(async (peer) => {
+        const name = await provider.lookupAddress(peer.address)
+
+        if (name) {
+          const address = await provider.resolveName(name)
+
+          if (address && peer.address === address.toLowerCase()) {
+            peerMap.set(peer.address, { ...peerMap.get(peer.address)!, name })
+          }
+        }
+      })
+    }
+  }, [provider, peerMap])
+
   useEffect(() => {
     peers.forEach((peer: Peer) => {
       if (!peerMap.get(peer.address)) {
-        peerMap.set(peer.address, { ...peer, hasNewMessage: false })
+        peerMap.set(peer.address, { ...peer, hasNewMessage: false, name: '' })
       }
     })
-  }, [peers, peerMap])
+
+    resolveENS(peers)
+  }, [peers, peerMap, resolveENS])
 
   const readAllMessages = useCallback((address: string) => {
     if (address) {
@@ -185,66 +204,72 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   }, [wasm])
 
+  const initClient = useCallback(async() => {
+    if (account && provider && wasm && turnUrl && nodeUrl) {
+      // debug(true)
+      setStatus('connecting')
+      
+      const unsignedInfo = new UnsignedInfo(account);
+      // @ts-ignore
+      const signer = provider.getSigner(account);
+      const signed = await signer.signMessage(unsignedInfo.auth);
+      const sig = new Uint8Array(web3.utils.hexToBytes(signed));
+
+      const client = await Client.new_client(unsignedInfo, sig, turnUrl);
+      setClient(client)
+
+      const callback = new MessageCallbackInstance(
+        async (response: any, message: any) => {
+          // console.group('on custom message')
+          const { relay } = response
+          // console.log(`relay`, relay)
+          // console.log(`destination`, relay.destination)
+          // console.log(message)
+          // console.log(new TextDecoder().decode(message))
+          const to = relay.destination
+          const from = relay.path[0]
+          // console.log(`from`, from)
+          // console.log(`to`, to)
+
+          if (chats.get(from)) {
+            chats.set(from, [...chats.get(from)!, { from, to, message: new TextDecoder().decode(message) }])
+          } else {
+            chats.set(from, [{ from, to, message: new TextDecoder().decode(message) }])
+          }
+
+          peerMap.set(from, {
+            ...peerMap.get(from)!,
+            hasNewMessage: true
+          })
+
+          // console.log(chats.get(from))
+          // console.groupEnd()
+        }, async (
+          relay: any, prev: String,
+      ) => {
+        // console.group('on builtin message')
+        // console.log(relay)
+        // console.log(prev)
+        // console.groupEnd()
+      },
+      )
+
+      await client.listen(callback)
+
+      const promises = nodeUrl.split(';').map(async (url: string) => await client.connect_peer_via_http(nodeUrl))
+
+      await Promise.any(promises)
+
+      setStatus('connected')
+
+      return () => {
+        setStatus('disconnected')
+      }
+    }
+  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap])
+
   useEffect(() => {
     if (account && provider && wasm && turnUrl && nodeUrl) {
-      const initClient = async () => {
-        debug(true)
-        setStatus('connecting')
-        
-        const unsignedInfo = new UnsignedInfo(account);
-        // @ts-ignore
-        const signer = provider.getSigner(account);
-        const signed = await signer.signMessage(unsignedInfo.auth);
-        const sig = new Uint8Array(web3.utils.hexToBytes(signed));
-
-        const client = await Client.new_client(unsignedInfo, sig, turnUrl);
-        setClient(client)
-
-        const callback = new MessageCallbackInstance(
-          async (response: any, message: any) => {
-            console.group('on custom message')
-            const { relay } = response
-            console.log(`relay`, relay)
-            console.log(`destination`, relay.destination)
-            console.log(message)
-            console.log(new TextDecoder().decode(message))
-            const to = relay.destination
-            const from = relay.path[0]
-            console.log(`from`, from)
-            console.log(`to`, to)
-
-            if (chats.get(from)) {
-              chats.set(from, [...chats.get(from)!, { from, to, message: new TextDecoder().decode(message) }])
-            } else {
-              chats.set(from, [{ from, to, message: new TextDecoder().decode(message) }])
-            }
-
-            peerMap.set(from, {
-              ...peerMap.get(from)!,
-              hasNewMessage: true
-            })
-
-            console.log(chats.get(from))
-            console.groupEnd()
-          }, async (
-            relay: any, prev: String,
-        ) => {
-          console.group('on builtin message')
-          console.log(relay)
-          console.log(prev)
-          console.groupEnd()
-        },
-        )
-
-        await client.listen(callback)
-
-        const promises = nodeUrl.split(';').map(async (url: string) => await client.connect_peer_via_http(nodeUrl))
-
-        await Promise.any(promises)
-
-        setStatus('connected')
-      }
-
       try {
         initClient()
       } catch (e) {
@@ -252,7 +277,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('failed')
       }
     }
-  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap])
+  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap, initClient])
 
   return (
     <RingsContext.Provider

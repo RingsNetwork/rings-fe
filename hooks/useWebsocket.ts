@@ -5,11 +5,12 @@ import useWebSocket, { ReadyState } from 'react-use-websocket'
 const useWebsocket = () => {
   const didUnmount = useRef(false)
 
-  const { account } = useWeb3React()
+  const { account, provider } = useWeb3React()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
   const [onliners, setOnliners] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string }>>(new Map())
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
@@ -20,6 +21,34 @@ const useWebsocket = () => {
       reconnectInterval: 3000,
     }
   );
+
+  useEffect(() => {
+    onliners.forEach((address: string) => {
+      if (!onlinerMap.get(address)) {
+        onlinerMap.set(address, { address, name: '' })
+      }
+    })
+  }, [onliners, onlinerMap])
+
+  const resolveENS = useCallback(async (onliners: string[]) => {
+    if (provider) {
+      onliners.forEach(async (address) => {
+        const name = await provider.lookupAddress(address)
+
+        if (name) {
+          const _address = await provider.resolveName(name)
+
+          if (_address && address === _address.toLowerCase()) {
+            onlinerMap.set(address, { ...onlinerMap.get(address)!, name })
+          }
+        }
+      })
+    }
+  }, [provider, onlinerMap])
+
+  useEffect(() => {
+    resolveENS(onliners)
+  }, [onliners, resolveENS])
 
   const changeStatus = useCallback((status: 'join' | 'leave') => {
     if (readyState === ReadyState.OPEN && account) {
@@ -47,7 +76,7 @@ const useWebsocket = () => {
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {
-        setOnliners((prev) => [...prev.filter(peer => peer !== did), did])
+        setOnliners((prev) => [...prev.filter(peer => peer !== did), did.toLowerCase()])
       } else if (data === 'leave') {
         setOnliners((prev) => prev.filter(o => o !== did))
       } else if (data.list) {
@@ -58,6 +87,7 @@ const useWebsocket = () => {
 
   return {
     onliners,
+    onlinerMap,
     changeStatus
   }
 }

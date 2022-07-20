@@ -31,6 +31,7 @@ import ConnectByManual from '../components/ConnectByManual'
 import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
+import useENS from '../hooks/useENS';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
@@ -39,7 +40,8 @@ const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
   const { account } = useWeb3React()
   const { chats, peers, sendMessage, connectByAddress, peerMap, readAllMessages } = useRings()
-  const { changeStatus, onliners } = useWebsocket()
+  const { changeStatus, onliners, onlinerMap } = useWebsocket()
+  const accountName = useENS()
 
   const [groups, setGroups] = useState<any[]>([])
 
@@ -103,14 +105,13 @@ const Home: NextPage = () => {
   }, [message, activeChat, sending, sendMessage])
 
   const handleJoinPublicRoom = useCallback((status: 'join' | 'leave') => {
-    console.log(`handleJoinPublicRoom`)
     if (account) {
       changeStatus(status)
     }
   }, [account, changeStatus])
 
   const handleConnectByAddress = useCallback(async (address: string) => {
-    if (!address || connecting || address === account) {
+    if (!address || connecting || address === account?.toLowerCase()) {
       return
     }
 
@@ -151,7 +152,7 @@ const Home: NextPage = () => {
                   <>
                     <Flex mb="40px" alignItems="center" justifyContent="space-between">
                       <Box>
-                        <Box fontSize="14px">{formatAddress(account)}</Box>
+                        <Box fontSize="14px">{accountName}</Box>
                       </Box>
                       <Flex
                         alignItems="center"
@@ -208,11 +209,11 @@ const Home: NextPage = () => {
                   <Flex mb="15px" color="#757D8A" justifyContent="space-between" alignItems="center">
                     <Box fontSize={10}>Public</Box>
                     {
-                      account && !onliners.find((peer) => peer === account) ?
+                      account && !onliners.find((peer) => peer === account.toLowerCase()) ?
                       <Box cursor="pointer" onClick={() => handleJoinPublicRoom('join')}>
                         Join
                       </Box> :
-                      account && onliners.find((peer) => peer === account) ?
+                      account && onliners.find((peer) => peer === account.toLowerCase()) ?
                       <Box cursor="pointer" onClick={() => handleJoinPublicRoom('leave')}>
                         Leave
                       </Box> :
@@ -225,21 +226,21 @@ const Home: NextPage = () => {
                       onliners.map((peer) => 
                         <Flex 
                           mb="20px" 
-                          cursor={ peer === account ? '' : 'pointer'} 
+                          cursor={ peer !== account.toLowerCase() && onlinerMap.get(peer) && !peerMap.get(peer) ? 'pointer' : 'default'} 
                           justifyContent="space-between" 
                           alignItems="center" 
                           key={peer} 
                           onClick={() => handleConnectByAddress(peer)}
                         >
                           {
-                            peer !== account ?
+                            peer !== account.toLowerCase() && onlinerMap.get(peer) && !peerMap.get(peer) ?
                             <Tooltip label="add to contacts">
-                              <Box>{formatAddress(peer)}</Box>
+                              <Box>{onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
                             </Tooltip>:
-                            <Box>{formatAddress(peer)}</Box>
+                            <Box>{onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
                           }
                           {
-                            peer === account ?
+                            peer === account.toLowerCase() ?
                             <Box>You</Box> :
                             connecting ?
                             <Box>Connecting...</Box> :
@@ -261,7 +262,7 @@ const Home: NextPage = () => {
                         peers.map((peer) => (
                           <Flex 
                             mb="20px" 
-                            cursor={ peer.state === 'connected' ? 'pointer' : ''}
+                            cursor={ peer.state === 'connected' ? 'pointer' : 'default'}
                             justifyContent="space-between" 
                             alignItems="center" 
                             key={peer.address} 
@@ -272,6 +273,7 @@ const Home: NextPage = () => {
 
                               setActiveChat(peer.address)
                               readAllMessages(peer.address)
+                              setSending(false)
 
                               if (!chatList.includes(peer.address)) {
                                 setChatList([...chatList, `${peer.address}`])
@@ -281,7 +283,7 @@ const Home: NextPage = () => {
                                 chats.set(peer.address, [])
                               }
                           }}>
-                            <Box>{formatAddress(peer.address)}</Box>
+                            <Box>{onlinerMap.get(peer.address)?.name || peerMap.get(peer.address)?.name || formatAddress(peer.address)}</Box>
                             <Box>{peer.state}</Box>
                             {
                               activeChat !== peer.address &&
@@ -319,12 +321,13 @@ const Home: NextPage = () => {
       chatList.forEach((key, i) => {
         hds.push(<Tab key={i}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{formatAddress(key)}</Box>
+            <Box>{peerMap.get(key)?.name || formatAddress(key)}</Box>
             <Box
               ml="20px"
               onClick={() => {
                 const list = chatList.filter((item) => item !== key)
 
+                setSending(false)
                 readAllMessages(key)
 
                 setActiveChat(list.length ? list[0] : null)
@@ -390,7 +393,7 @@ const Home: NextPage = () => {
           <Flex>
             <Input 
               ref={inputRef}
-              disabled={!account || !activeChat} 
+              disabled={!account || !activeChat || peerMap.get(activeChat)?.state !== 'connected'}
               fontSize={10} 
               mr="15px" 
               type="text" 
@@ -403,7 +406,7 @@ const Home: NextPage = () => {
               // @ts-ignore
               onCompositionEnd={handleComposition}
             />
-            <Button disabled={!account || !activeChat || !message} isLoading={sending} onClick={handleSendMessage}>Send</Button>
+            <Button disabled={!account || !activeChat || peerMap.get(activeChat)?.state !== 'connected' || !message} isLoading={sending} onClick={handleSendMessage}>Send</Button>
           </Flex>
         </Flex>
       </Card>
