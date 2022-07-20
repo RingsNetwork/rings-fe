@@ -18,7 +18,10 @@ const useRings = () => {
     nodeUrl,
     setNodeUrl,
     status,
-    setStatus
+    setStatus,
+    disconnect,
+    peerMap,
+    readAllMessages,
   } = useContext(RingsContext)
 
   return {
@@ -36,7 +39,10 @@ const useRings = () => {
     nodeUrl,
     setNodeUrl,
     status,
-    setStatus
+    setStatus,
+    disconnect,
+    peerMap,
+    readAllMessages,
   }
 }
 

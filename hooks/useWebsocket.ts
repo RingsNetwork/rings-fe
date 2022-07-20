@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 
@@ -8,8 +8,8 @@ const useWebsocket = () => {
   const { account } = useWeb3React()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
-  const [joinPublicRoom, setJoinPublicRoom] = useState(false)
   const [onliners, setOnliners] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
@@ -21,6 +21,20 @@ const useWebsocket = () => {
     }
   );
 
+  const changeStatus = useCallback((status: 'join' | 'leave') => {
+    if (readyState === ReadyState.OPEN && account) {
+      sendJsonMessage({
+        did: account,
+        timestamp: Date.now(),
+        data: status
+      })
+    }
+  }, [
+    readyState,
+    account,
+    sendJsonMessage
+  ])
+
   useEffect(() => {
     return () => {
       didUnmount.current = true;
@@ -29,7 +43,6 @@ const useWebsocket = () => {
 
   useEffect(() => {
     if (lastJsonMessage) {
-      // console.log(lastJsonMessage)
       // @ts-ignore
       const { did, data } = lastJsonMessage
 
@@ -43,25 +56,9 @@ const useWebsocket = () => {
     }
   }, [lastJsonMessage])
 
-  useEffect(() => {
-    console.group(`WebSocket`)
-    console.log(`time`, (new Date()).toLocaleTimeString())
-    console.log(`joinPublickRoom`, joinPublicRoom)
-    console.log(`readyState`, readyState)
-    console.log(`account`, account)
-    console.groupEnd()
-    if (readyState === ReadyState.OPEN && joinPublicRoom && account) {
-      sendJsonMessage({
-        did: account,
-        timestamp: Date.now(),
-        data: 'join'
-      })
-    }
-  }, [readyState, sendJsonMessage, account, joinPublicRoom])
-
   return {
-    setJoinPublicRoom,
     onliners,
+    changeStatus
   }
 }
 

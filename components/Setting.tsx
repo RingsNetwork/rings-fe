@@ -24,7 +24,7 @@ import useRings from '../hooks/useRings'
 const Setting: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const { turnUrl, nodeUrl, setTurnUrl, setNodeUrl } = useRings()
+  const { turnUrl, nodeUrl, setTurnUrl, setNodeUrl, disconnect } = useRings()
 
   const [turnUrlInput, setTurnUrlInput] = useState(turnUrl)
   const [nodeUrlInput, setNodeUrlInput] = useState(nodeUrl)
@@ -47,6 +47,7 @@ const Setting: React.FC = () => {
     setTurnUrl(turnUrlInput)
     setNodeUrl(nodeUrlInput)
     onClose()
+    disconnect()
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('turnUrl', turnUrlInput)

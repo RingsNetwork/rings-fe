@@ -25,6 +25,15 @@ interface RingsContext {
   setNodeUrl: (nodeUrl: string) => void,
   status: string,
   setStatus: (status: string) => void,
+  disconnect: () => void,
+  peerMap: Map<string, PeerMapProps>,
+  readAllMessages: (address: string) => void 
+}
+interface PeerMapProps {
+  address: string,
+  state: string | undefined,
+  transport_id: string,
+  hasNewMessage: boolean
 }
 
 export const RingsContext = createContext<RingsContext>({
@@ -43,6 +52,9 @@ export const RingsContext = createContext<RingsContext>({
   setNodeUrl: () => {},
   status: 'disconnected',
   setStatus: () => {},
+  disconnect: () => {},
+  peerMap: new Map(),
+  readAllMessages: () => {}
 })
 
 const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -56,6 +68,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [client, setClient] = useState<Client | null>(null)
   const [wasm, setWasm] = useState<any>(null)
   const [peers, setPeers] = useState<Peer[]>([])
+  const [peerMap, setPeerMap] = useState<Map<string, PeerMapProps>>(new Map())
 
   const [chats, setChats] = useState<Map<string, Chat_props[]>>(new Map())
 
@@ -64,10 +77,6 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       const peers = await client.list_peers()
 
       setPeers([
-        // {
-        //   state: 'connected',
-        //   address: '0x0000000000000000000000000000000000000000',
-        // }, 
         ...peers.map(({ address, ...rest }: Peer) => ({
           ...rest,
           address: address.startsWith(`0x`) ? address : `0x${address}`,
@@ -75,6 +84,23 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       ])
     }
   }, [client])
+
+  useEffect(() => {
+    peers.forEach((peer: Peer) => {
+      if (!peerMap.get(peer.address)) {
+        peerMap.set(peer.address, { ...peer, hasNewMessage: false })
+      }
+    })
+  }, [peers, peerMap])
+
+  const readAllMessages = useCallback((address: string) => {
+    if (address) {
+      peerMap.set(address, {
+        ...peerMap.get(address)!,
+        hasNewMessage: false
+      })
+    }
+  }, [peerMap])
 
   const sendMessage = useCallback(async (to: string, message: string) => {
     if (client && peers.length) {
@@ -86,9 +112,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
-      console.log(`connect by address: ${address}`)
+      // console.log(`connect by address: ${address}`)
       await client.connect_with_address(address)
-      console.log(`connected`)
+      // console.log(`connected`)
     }
   }, [client])
 
@@ -115,6 +141,14 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       return result
     }
   }, [client])
+
+  const disconnect = useCallback(async () => {
+    if (client && peers.length) {
+      const promises = peers.map(async ({ address }) => await client.disconnect(address))
+
+      await Promise.all(promises)
+    }
+  }, [client, peers])
 
   useEffect(() => {
     const turnUrl = localStorage.getItem('turnUrl') || process.env.NEXT_PUBLIC_TURN_URL!
@@ -185,6 +219,11 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               chats.set(from, [{ from, to, message: new TextDecoder().decode(message) }])
             }
 
+            peerMap.set(from, {
+              ...peerMap.get(from)!,
+              hasNewMessage: true
+            })
+
             console.log(chats.get(from))
             console.groupEnd()
           }, async (
@@ -199,8 +238,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
         await client.listen(callback)
 
-        const transportId = await client.connect_peer_via_http(nodeUrl);
-        console.log(`transportId: ${transportId}`)
+        const promises = nodeUrl.split(';').map(async (url: string) => await client.connect_peer_via_http(nodeUrl))
+
+        await Promise.any(promises)
 
         setStatus('connected')
       }
@@ -212,7 +252,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('failed')
       }
     }
-  }, [account, wasm, provider, chats, turnUrl, nodeUrl])
+  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap])
 
   return (
     <RingsContext.Provider
@@ -231,7 +271,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         nodeUrl,
         setNodeUrl,
         status,
-        setStatus
+        setStatus,
+        disconnect,
+        peerMap,
+        readAllMessages
       }}
     >
       {children}

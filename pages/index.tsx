@@ -38,8 +38,8 @@ const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
   const { account } = useWeb3React()
-  const { chats, peers, fetchPeers, sendMessage, connectByAddress } = useRings()
-  const { setJoinPublicRoom, onliners } = useWebsocket()
+  const { chats, peers, sendMessage, connectByAddress, peerMap, readAllMessages } = useRings()
+  const { changeStatus, onliners } = useWebsocket()
 
   const [groups, setGroups] = useState<any[]>([])
 
@@ -102,12 +102,12 @@ const Home: NextPage = () => {
     }
   }, [message, activeChat, sending, sendMessage])
 
-  const handleJoinPublicRoom = useCallback(() => {
+  const handleJoinPublicRoom = useCallback((status: 'join' | 'leave') => {
     console.log(`handleJoinPublicRoom`)
     if (account) {
-      setJoinPublicRoom(true)
+      changeStatus(status)
     }
-  }, [account, setJoinPublicRoom])
+  }, [account, changeStatus])
 
   const handleConnectByAddress = useCallback(async (address: string) => {
     if (!address || connecting || address === account) {
@@ -206,11 +206,15 @@ const Home: NextPage = () => {
               { account ?
                 <Box mb="40px">
                   <Flex mb="15px" color="#757D8A" justifyContent="space-between" alignItems="center">
-                    <Box fontSize={10}>Plublic</Box>
+                    <Box fontSize={10}>Public</Box>
                     {
                       account && !onliners.find((peer) => peer === account) ?
-                      <Box cursor="pointer" onClick={handleJoinPublicRoom}>
+                      <Box cursor="pointer" onClick={() => handleJoinPublicRoom('join')}>
                         Join
+                      </Box> :
+                      account && onliners.find((peer) => peer === account) ?
+                      <Box cursor="pointer" onClick={() => handleJoinPublicRoom('leave')}>
+                        Leave
                       </Box> :
                       null
                     }
@@ -267,6 +271,7 @@ const Home: NextPage = () => {
                               }
 
                               setActiveChat(peer.address)
+                              readAllMessages(peer.address)
 
                               if (!chatList.includes(peer.address)) {
                                 setChatList([...chatList, `${peer.address}`])
@@ -278,6 +283,13 @@ const Home: NextPage = () => {
                           }}>
                             <Box>{formatAddress(peer.address)}</Box>
                             <Box>{peer.state}</Box>
+                            {
+                              activeChat !== peer.address &&
+                              peerMap.get(peer.address)?.hasNewMessage
+                               ?
+                              <Box w="6px" h="6px" borderRadius="50%" bg="red"></Box> : 
+                              null
+                            }
                           </Flex>
                         ))
                       }
@@ -313,6 +325,8 @@ const Home: NextPage = () => {
               onClick={() => {
                 const list = chatList.filter((item) => item !== key)
 
+                readAllMessages(key)
+
                 setActiveChat(list.length ? list[0] : null)
                 setChatList(list)
               }}
@@ -336,19 +350,11 @@ const Home: NextPage = () => {
           return (
             <Box 
               key={`${message}-${i}`}
-              mb="30px"
+              mb="20px"
             >
-              <Flex alignItems="center" justifyContent={from === account ? 'flex-end' : 'flex-start'}>
-                <Box 
-                  display="inline-block" 
-                  maxW="70%" 
-                  p="10px 20px" 
-                  color="#2e2e3a" 
-                  bg={from === account ? '#15cd96' : "#d8d8d8"}
-                  borderRadius={from === account ? '20px 20px 0 20px' : "20px 20px 20px 0"} 
-                >
-                  {message}
-                </Box>
+              <Flex alignItems="center">
+                <Box color={ from === account ? "#15CD96" : '#757d8a'} mr="10px">{formatAddress(account!)} &gt; </Box>
+                <Box>{message}</Box>
               </Flex>
             </Box>
           )
