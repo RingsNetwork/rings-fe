@@ -235,9 +235,9 @@ const Home: NextPage = () => {
                           {
                             peer !== account.toLowerCase() && onlinerMap.get(peer) && !peerMap.get(peer) ?
                             <Tooltip label="add to contacts">
-                              <Box>{onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
+                              <Box>{onlinerMap.get(peer)?.bns || peerMap.get(peer)?.bns || onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
                             </Tooltip>:
-                            <Box>{onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
+                            <Box>{onlinerMap.get(peer)?.bns || peerMap.get(peer)?.bns || onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
                           }
                           {
                             peer === account.toLowerCase() ?
@@ -283,7 +283,7 @@ const Home: NextPage = () => {
                                 chats.set(peer.address, [])
                               }
                           }}>
-                            <Box>{onlinerMap.get(peer.address)?.name || peerMap.get(peer.address)?.name || formatAddress(peer.address)}</Box>
+                            <Box>{onlinerMap.get(peer.address)?.bns || peerMap.get(peer.address)?.bns || onlinerMap.get(peer.address)?.name || peerMap.get(peer.address)?.name || formatAddress(peer.address)}</Box>
                             <Box>{peer.state}</Box>
                             {
                               activeChat !== peer.address &&
@@ -321,7 +321,7 @@ const Home: NextPage = () => {
       chatList.forEach((key, i) => {
         hds.push(<Tab key={i}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{peerMap.get(key)?.name || formatAddress(key)}</Box>
+            <Box>{peerMap.get(key)?.bns || peerMap.get(key)?.name || formatAddress(key)}</Box>
             <Box
               ml="20px"
               onClick={() => {
@@ -356,7 +356,9 @@ const Home: NextPage = () => {
               mb="20px"
             >
               <Flex alignItems="center">
-                <Box color={ from === account ? "#15CD96" : '#757d8a'} mr="10px">{formatAddress(account!)} &gt; </Box>
+                <Box color={ from.toLowerCase() === account?.toLowerCase() ? "#15CD96" : '#757d8a'} mr="10px">
+                  {peerMap.get(from?.toLowerCase())?.bns || peerMap.get(from?.toLowerCase())?.name || formatAddress(from)} &gt; 
+                </Box>
                 <Box>{message}</Box>
               </Flex>
             </Box>
@@ -406,7 +408,18 @@ const Home: NextPage = () => {
               // @ts-ignore
               onCompositionEnd={handleComposition}
             />
-            <Button disabled={!account || !activeChat || peerMap.get(activeChat)?.state !== 'connected' || !message} isLoading={sending} onClick={handleSendMessage}>Send</Button>
+            <Button 
+              disabled={
+                !account || 
+                !activeChat || 
+                // peerMap.get(activeChat)?.state !== 'connected' || 
+                !message
+              } 
+              isLoading={sending} 
+              onClick={handleSendMessage}
+            >
+              Send
+            </Button>
           </Flex>
         </Flex>
       </Card>

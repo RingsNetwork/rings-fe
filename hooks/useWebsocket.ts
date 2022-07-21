@@ -1,16 +1,18 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
+import useBNS from './useBNS'
 
 const useWebsocket = () => {
   const didUnmount = useRef(false)
 
   const { account, provider } = useWeb3React()
+  const { getBNS } = useBNS()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
   const [onliners, setOnliners] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string }>>(new Map())
+  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string, bns: string }>>(new Map())
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
@@ -25,10 +27,22 @@ const useWebsocket = () => {
   useEffect(() => {
     onliners.forEach((address: string) => {
       if (!onlinerMap.get(address)) {
-        onlinerMap.set(address, { address, name: '' })
+        onlinerMap.set(address, { address, name: '', bns: '' })
       }
     })
   }, [onliners, onlinerMap])
+
+  const resolveBNS = useCallback(async (peers: string[]) => {
+    if (getBNS) {
+      peers.forEach(async (peer) => {
+        const name = await getBNS(peer)
+
+        if (name) {
+          onlinerMap.set(peer, { ...onlinerMap.get(peer)!, bns: name })
+        }
+      })
+    }
+  }, [getBNS, onlinerMap])
 
   const resolveENS = useCallback(async (onliners: string[]) => {
     if (provider) {
