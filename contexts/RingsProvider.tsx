@@ -3,6 +3,8 @@ import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
 import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
+
+import useBNS from '../hooks/useBNS';
 export interface Chat_props {
   from: string,
   to: string,
@@ -35,6 +37,7 @@ interface PeerMapProps {
   transport_id: string,
   hasNewMessage: boolean,
   name: string,
+  bns: string
 }
 
 export const RingsContext = createContext<RingsContext>({
@@ -60,6 +63,7 @@ export const RingsContext = createContext<RingsContext>({
 
 const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { account, provider } = useWeb3React()
+  const { getBNS } = useBNS()
 
   const [turnUrl, setTurnUrl] = useState('')
   const [nodeUrl, setNodeUrl] = useState('')
@@ -102,15 +106,28 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   }, [provider, peerMap])
 
+  const resolveBNS = useCallback(async (peers: Peer[]) => {
+    if (getBNS) {
+      peers.forEach(async (peer) => {
+        const name = await getBNS(peer.address)
+
+        if (name) {
+          peerMap.set(peer.address, { ...peerMap.get(peer.address)!, bns: name })
+        }
+      })
+    }
+  }, [getBNS, peerMap])
+
   useEffect(() => {
     peers.forEach((peer: Peer) => {
       if (!peerMap.get(peer.address)) {
-        peerMap.set(peer.address, { ...peer, hasNewMessage: false, name: '' })
+        peerMap.set(peer.address, { ...peer, hasNewMessage: false, name: '', bns: '' })
       }
     })
 
+    resolveBNS(peers)
     resolveENS(peers)
-  }, [peers, peerMap, resolveENS])
+  }, [peers, peerMap, resolveENS, resolveBNS])
 
   const readAllMessages = useCallback((address: string) => {
     if (address) {
@@ -206,7 +223,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const initClient = useCallback(async() => {
     if (account && provider && wasm && turnUrl && nodeUrl) {
-      // debug(true)
+      debug(true)
       setStatus('connecting')
       
       const unsignedInfo = new UnsignedInfo(account);
