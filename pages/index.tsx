@@ -18,6 +18,7 @@ import {
   Tab, 
   Center, 
   Tooltip,
+  useColorMode
 } from '@chakra-ui/react';
 import { MdOutlineClose } from 'react-icons/md';
 
@@ -34,7 +35,8 @@ import Setting from '../components/Setting'
 import Loading from '../components/Loading';
 import useENS from '../hooks/useENS';
 
-import Logo from '../assets/img/logo2.png'
+import LogoDark from '../assets/img/logo-dark.png'
+import LogoLight from '../assets/img/logo-light.png'
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
@@ -45,6 +47,8 @@ const Home: NextPage = () => {
   const { chats, peers, sendMessage, connectByAddress, peerMap, readAllMessages } = useRings()
   const { changeStatus, onliners, onlinerMap } = useWebsocket()
   const accountName = useENS()
+
+  const { colorMode } = useColorMode() 
 
   const [groups, setGroups] = useState<any[]>([])
 
@@ -444,7 +448,7 @@ const Home: NextPage = () => {
         <Flex height="100%" flexDirection="column">
           <Center mb="10px">
             <Center>
-              <Image width="32px" height="32px" src={Logo} alt="rings chat logo" />
+              <Image width="32px" height="32px" src={colorMode === 'light' ? LogoLight : LogoDark} alt="rings chat logo" />
               <Box color="#757D8A" ml="10px">Rings Chat</Box>
             </Center>
           </Center>
