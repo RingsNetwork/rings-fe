@@ -273,7 +273,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       await client.listen(callback)
 
-      const promises = nodeUrl.split(';').map(async (url: string) => await client.connect_peer_via_http(nodeUrl))
+      const promises = nodeUrl.split(';').map(async (url: string) => 
+        await client.connect_peer_via_http(nodeUrl)
+      )
 
       await Promise.any(promises)
 
