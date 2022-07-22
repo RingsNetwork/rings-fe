@@ -14,7 +14,7 @@
     "@emotion/styled": "^11.9.3",
     "@ensdomains/eth-ens-namehash": "^2.0.15",
     "@ringsnetwork/bns-util": "^0.2.0",
-    "@ringsnetwork/rings-node": "0.2.1",
+    "@ringsnetwork/rings-node": "0.2.0-dev-20220721.0",
     "@walletconnect/ethereum-provider": "^1.7.7",
     "@web3-react/core": "8.0.23-beta.0",
     "@web3-react/metamask": "8.0.19-beta.0",
