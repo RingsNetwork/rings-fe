@@ -4,7 +4,6 @@ import { useWeb3React } from '@web3-react/core'
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import dynamic from "next/dynamic";
-import Image from 'next/image'
 
 import { format } from 'fecha'
 
@@ -18,7 +17,8 @@ import {
   Tab, 
   Center, 
   Tooltip,
-  useColorMode
+  useColorMode,
+  Image
 } from '@chakra-ui/react';
 import { MdOutlineClose } from 'react-icons/md';
 
@@ -34,9 +34,6 @@ import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
 import useENS from '../hooks/useENS';
-
-import LogoDark from '../assets/img/logo-dark.png'
-import LogoLight from '../assets/img/logo-light.png'
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
@@ -448,7 +445,7 @@ const Home: NextPage = () => {
         <Flex height="100%" flexDirection="column">
           <Center mb="10px">
             <Center>
-              <Image width="32px" height="32px" src={colorMode === 'light' ? LogoLight : LogoDark} alt="rings chat logo" />
+              <Image width="32px" height="32px" src={`/logo-${colorMode}.png`} alt="rings chat logo" />
               <Box color="#757D8A" ml="10px">Rings Chat</Box>
             </Center>
           </Center>

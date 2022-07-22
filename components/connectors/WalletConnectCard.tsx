@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { Image } from '@chakra-ui/react'
 
 import { hooks, walletConnect } from '../../connectors/walletConnect'
 import { ConnectWithSelect } from '../ConnectWithSelect'

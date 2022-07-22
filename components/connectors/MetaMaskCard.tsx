@@ -1,5 +1,3 @@
-import { useEffect } from 'react'
-// import Image from 'next/image'
 import { Image } from '@chakra-ui/react'
 
 import { hooks, metaMask } from '../../connectors/metaMask'
