@@ -65,6 +65,12 @@ const useWebsocket = () => {
   }, [onliners, resolveENS])
 
   const changeStatus = useCallback((status: 'join' | 'leave') => {
+    console.group(`change status`)
+    console.log(`time`, new Date().toLocaleTimeString())
+    console.log(`status: ${status}`)
+    console.log(`account: ${account}`)
+    console.log(`readyState`, readyState)
+    console.groupEnd()
     if (readyState === ReadyState.OPEN && account) {
       sendJsonMessage({
         did: account,
