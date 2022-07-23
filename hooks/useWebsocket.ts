@@ -61,8 +61,9 @@ const useWebsocket = () => {
   }, [provider, onlinerMap])
 
   useEffect(() => {
+    resolveBNS(onliners)
     resolveENS(onliners)
-  }, [onliners, resolveENS])
+  }, [onliners, resolveENS, resolveBNS])
 
   const changeStatus = useCallback((status: 'join' | 'leave') => {
     console.group(`change status`)
@@ -96,9 +97,9 @@ const useWebsocket = () => {
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {
-        setOnliners((prev) => [...prev.filter(peer => peer !== did), did.toLowerCase()])
+        setOnliners((prev) => [...prev.filter(peer => peer !== did.toLowerCase()), did.toLowerCase()])
       } else if (data === 'leave') {
-        setOnliners((prev) => prev.filter(o => o !== did))
+        setOnliners((prev) => prev.filter(o => o !== did.toLowerCase()))
       } else if (data.list) {
         setOnliners(data.list)
       }
