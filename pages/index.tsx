@@ -4,6 +4,7 @@ import { useWeb3React } from '@web3-react/core'
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import dynamic from "next/dynamic";
+import getConfig from 'next/config'
 
 import { format } from 'fecha'
 
@@ -37,6 +38,8 @@ import useENS from '../hooks/useENS';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
+
+const { publicRuntimeConfig } = getConfig()
 
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
@@ -311,7 +314,7 @@ const Home: NextPage = () => {
             sm: 'block',
           }}>
             <ThemeToogle />
-            
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">{publicRuntimeConfig?.ringsNodeVersion}</Box>
           </Box>
 
         </Flex>
