@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, createContext } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
-import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
+import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug, log_level } from '@ringsnetwork/rings-node'
 export interface Chat_props {
   from: string,
   to: string,
@@ -27,7 +27,7 @@ interface RingsContext {
   setStatus: (status: string) => void,
   disconnect: () => void,
   peerMap: Map<string, PeerMapProps>,
-  readAllMessages: (address: string) => void 
+  readAllMessages: (address: string) => void
 }
 interface PeerMapProps {
   address: string,
@@ -207,8 +207,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const initClient = useCallback(async() => {
     if (account && provider && wasm && turnUrl && nodeUrl) {
       // debug(true)
+      log_level("trace");
       setStatus('connecting')
-      
+
       const unsignedInfo = new UnsignedInfo(account);
       // @ts-ignore
       const signer = provider.getSigner(account);
@@ -256,9 +257,11 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       await client.listen(callback)
 
-      const promises = nodeUrl.split(';').map(async (url: string) => await client.connect_peer_via_http(nodeUrl))
-
-      await Promise.any(promises)
+      /* const promises = nodeUrl.split(';').map(
+	 async (url: string) => await client.connect_peer_via_http(nodeUrl)
+       * ) */
+      await client.connect_peer_via_http(nodeUrl);
+      // await Promise.any(promises)
 
       setStatus('connected')
 
