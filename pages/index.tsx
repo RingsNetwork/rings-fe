@@ -59,6 +59,7 @@ const Home: NextPage = () => {
 
   const [sending, setSending] = useState<boolean>(false)
   const [connecting, setConnecting] = useState<boolean>(false)
+  const [connectingPeer, setConnectingPeer] = useState('')
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [inputing, setInputing] = useState(false)
@@ -124,11 +125,14 @@ const Home: NextPage = () => {
 
     try {
       setConnecting(true)
+      setConnectingPeer(address)
       await connectByAddress(address)
       setConnecting(false)
+      setConnectingPeer('')
     } catch (e) {
       console.error(e)
       setConnecting(false)
+      setConnectingPeer('')
     }
   }, [connectByAddress, connecting, account])
 
@@ -249,7 +253,7 @@ const Home: NextPage = () => {
                           {
                             peer === account.toLowerCase() ?
                             <Box>You</Box> :
-                            connecting ?
+                            connecting && connectingPeer === peer ?
                             <Box>Connecting...</Box> :
                             null
                           }
@@ -403,7 +407,9 @@ const Home: NextPage = () => {
           <Flex>
             <Input 
               ref={inputRef}
-              disabled={!account || !activeChat || peerMap.get(activeChat)?.state !== 'connected'}
+              disabled={!account || !activeChat 
+                // || peerMap.get(activeChat)?.state !== 'connected'
+              }
               fontSize={10} 
               mr="15px" 
               type="text" 
