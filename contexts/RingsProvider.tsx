@@ -180,9 +180,12 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const disconnect = useCallback(async () => {
     if (client && peers.length) {
+      console.log(`disconnect start`)
+      console.log(`peers`, peers)
       const promises = peers.map(async ({ address }) => await client.disconnect(address))
 
       await Promise.all(promises)
+      console.log(`disconnect done`)
     }
   }, [client, peers])
 
@@ -277,7 +280,11 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         await client.connect_peer_via_http(nodeUrl)
       )
 
-      await Promise.any(promises)
+      try {
+        await Promise.any(promises)
+      } catch (e) {
+        console.error(e)
+      }
 
       setStatus('connected')
 
