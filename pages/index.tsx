@@ -58,8 +58,6 @@ const Home: NextPage = () => {
   const [message, setMessage] = useState<string>('')
 
   const [sending, setSending] = useState<boolean>(false)
-  const [connecting, setConnecting] = useState<boolean>(false)
-  const [connectingPeer, setConnectingPeer] = useState('')
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [inputing, setInputing] = useState(false)
@@ -119,22 +117,25 @@ const Home: NextPage = () => {
   }, [account, changeStatus])
 
   const handleConnectByAddress = useCallback(async (address: string) => {
-    if (!address || connecting || address === account?.toLowerCase()) {
+    if (
+      !address || 
+      onlinerMap.get(address)?.status === 'connecting' ||
+      address.toLowerCase() === account?.toLowerCase()
+    ) {
       return
     }
 
     try {
-      setConnecting(true)
-      setConnectingPeer(address)
+      onlinerMap.set(address, { ...onlinerMap.get(address)!, status: 'connecting' })
+
       await connectByAddress(address)
-      setConnecting(false)
-      setConnectingPeer('')
+
+      onlinerMap.set(address, { ...onlinerMap.get(address)!, status: 'connected' })
     } catch (e) {
       console.error(e)
-      setConnecting(false)
-      setConnectingPeer('')
+      onlinerMap.set(address, { ...onlinerMap.get(address)!, status: '' })
     }
-  }, [connectByAddress, connecting, account])
+  }, [connectByAddress, account, onlinerMap])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -237,25 +238,26 @@ const Home: NextPage = () => {
                       onliners.map((peer) => 
                         <Flex 
                           mb="20px" 
-                          cursor={ peer !== account.toLowerCase() && onlinerMap.get(peer) && !peerMap.get(peer) ? 'pointer' : 'default'} 
+                          cursor={ peer.toLowerCase() !== account.toLowerCase() ? 'pointer' : 'default' } 
                           justifyContent="space-between" 
                           alignItems="center" 
                           key={peer} 
                           onClick={() => handleConnectByAddress(peer)}
                         >
                           {
-                            peer !== account.toLowerCase() && onlinerMap.get(peer) && !peerMap.get(peer) ?
-                            <Tooltip label="add to contacts">
+                            peer.toLowerCase() === account.toLowerCase() ?
+                            <>
                               <Box>{onlinerMap.get(peer)?.bns || peerMap.get(peer)?.bns || onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
-                            </Tooltip>:
-                            <Box>{onlinerMap.get(peer)?.bns || peerMap.get(peer)?.bns || onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
-                          }
-                          {
-                            peer === account.toLowerCase() ?
-                            <Box>You</Box> :
-                            connecting && connectingPeer === peer ?
-                            <Box>Connecting...</Box> :
-                            null
+                              <Box>You</Box> 
+                            </> :
+                            <>
+                              <Tooltip label="add to contacts">
+                                <Box>{onlinerMap.get(peer)?.bns || peerMap.get(peer)?.bns || onlinerMap.get(peer)?.name || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
+                              </Tooltip>
+                              {
+                                onlinerMap.get(peer)?.status ? <Box>{onlinerMap.get(peer)?.status}</Box> : null
+                              }
+                            </>
                           }
                         </Flex>)
                     }
@@ -282,8 +284,8 @@ const Home: NextPage = () => {
                                 return
                               }
 
-                              setActiveChat(peer.address)
                               readAllMessages(peer.address)
+                              setActiveChat(peer.address)
                               setSending(false)
 
                               if (!chatList.includes(peer.address)) {
@@ -294,15 +296,25 @@ const Home: NextPage = () => {
                                 chats.set(peer.address, [])
                               }
                           }}>
-                            <Box>{onlinerMap.get(peer.address)?.bns || peerMap.get(peer.address)?.bns || onlinerMap.get(peer.address)?.name || peerMap.get(peer.address)?.name || formatAddress(peer.address)}</Box>
-                            <Box>{peer.state}</Box>
-                            {
-                              activeChat !== peer.address &&
-                              peerMap.get(peer.address)?.hasNewMessage
-                               ?
-                              <Box w="6px" h="6px" borderRadius="50%" bg="red"></Box> : 
-                              null
-                            }
+                            <Box>
+                              {
+                                onlinerMap.get(peer.address)?.bns || 
+                                peerMap.get(peer.address)?.bns || 
+                                onlinerMap.get(peer.address)?.name || 
+                                peerMap.get(peer.address)?.name || 
+                                formatAddress(peer.address)
+                              }
+                            </Box>
+                            <Flex justifyContent="flex-end" alignItems="center">
+                              <Box mr="5px">{peer.state}</Box>
+                              {
+                                activeChat !== peer.address &&
+                                peerMap.get(peer.address)?.hasNewMessage
+                                ?
+                                <Box w="6px" h="6px" borderRadius="50%" bg="red"></Box> : 
+                                <Box w="6px" h="6px" borderRadius="50%" bg="transparent"></Box> 
+                              }
+                            </Flex>
                           </Flex>
                         ))
                       }
@@ -318,7 +330,8 @@ const Home: NextPage = () => {
             sm: 'block',
           }}>
             <ThemeToogle />
-            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">{publicRuntimeConfig?.ringsNodeVersion}</Box>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Node: {publicRuntimeConfig?.ringsNodeVersion}</Box>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Chat: {publicRuntimeConfig?.ringsChatVersion}</Box>
           </Box>
 
         </Flex>

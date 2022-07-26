@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
+
 import useBNS from './useBNS'
 
 const useWebsocket = () => {
@@ -12,7 +13,7 @@ const useWebsocket = () => {
 
   const [onliners, setOnliners] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string, bns: string }>>(new Map())
+  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string, bns: string, status: string }>>(new Map())
 
   const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
     socketUrl,
@@ -27,7 +28,7 @@ const useWebsocket = () => {
   useEffect(() => {
     onliners.forEach((address: string) => {
       if (!onlinerMap.get(address)) {
-        onlinerMap.set(address, { address, name: '', bns: '' })
+        onlinerMap.set(address, { address, name: '', bns: '', status: '' })
       }
     })
   }, [onliners, onlinerMap])
@@ -97,9 +98,9 @@ const useWebsocket = () => {
       const { did, data } = lastJsonMessage
 
       if (data === 'join') {
-        setOnliners((prev) => [...prev.filter(peer => peer !== did.toLowerCase()), did.toLowerCase()])
+        setOnliners((prev) => [...prev.filter(peer => peer.toLowerCase() !== did.toLowerCase()), did.toLowerCase()])
       } else if (data === 'leave') {
-        setOnliners((prev) => prev.filter(o => o !== did.toLowerCase()))
+        setOnliners((prev) => prev.filter(o => o.toLowerCase() !== did.toLowerCase()))
       } else if (data.list) {
         setOnliners(data.list)
       }

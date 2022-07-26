@@ -148,9 +148,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
-      // console.log(`connect by address: ${address}`)
+      console.log(`connect by address: ${address}`)
       await client.connect_with_address(address)
-      // console.log(`connected`)
+      console.log(`connected`)
     }
   }, [client])
 

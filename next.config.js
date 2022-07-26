@@ -12,7 +12,8 @@ const nextConfig = {
     return config;
   },
   publicRuntimeConfig: {
-    ringsNodeVersion: pkg.dependencies['@ringsnetwork/rings-node']
+    ringsNodeVersion: pkg.dependencies['@ringsnetwork/rings-node'],
+    ringsChatVersion: pkg.version,
   }
 }
 
