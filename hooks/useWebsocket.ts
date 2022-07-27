@@ -1,8 +1,76 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useReducer } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 
 import useBNS from './useBNS'
+import formatAddress from '../utils/formatAddress'
+interface OnlinerMapProps {
+  [key: string]: {
+    address: string,
+    name: string,
+    ens: string,
+    bns: string,
+    status: string
+  },
+}
+
+const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payload: any }) => {
+  switch (type) {
+    case 'join':
+      const { peer } = payload
+
+      return {
+        ...state,
+        [peer]: {
+          peer,
+          name: formatAddress(peer),
+          ens: '',
+          bns: '',
+          status: '',
+        }
+      }
+      break
+    case 'leave':
+      delete state[payload.peer]
+
+      return state
+    case 'connected':
+      const { peers } = payload
+
+      return peers.reduce((prev: OnlinerMapProps, peer: string) => {
+        const address = peer.toLowerCase()
+
+        return {
+          ...prev,
+          [address]: {
+            address,
+            name: formatAddress(address),
+            ens: '',
+            bns: '',
+            status: '',
+          }
+        }
+      }, {})
+    case 'changeStatus':
+      return {
+        ...state,
+        [payload.peer]: {
+          ...state[payload.peer],
+          status: payload.status,
+        }
+      }
+    case 'changeName':
+      return {
+        ...state,
+        [payload.peer]: {
+          ...state[payload.peer],
+          [payload.key]: payload.name,
+        }
+      }
+    default:
+      return state
+  }
+}
 
 const useWebsocket = () => {
   const didUnmount = useRef(false)
@@ -12,10 +80,10 @@ const useWebsocket = () => {
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
   const [onliners, setOnliners] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [onlinerMap, setOnlinerMap] = useState<Map<string, { address: string, name: string, bns: string, status: string }>>(new Map())
 
-  const { sendJsonMessage, readyState, lastJsonMessage, getWebSocket } = useWebSocket(
+  const [state, dispatch] = useReducer(reducer, {})
+
+  const { sendJsonMessage, readyState, lastJsonMessage } = useWebSocket(
     socketUrl,
     {
       shouldReconnect: (closeEvent) => didUnmount.current === false,
@@ -25,48 +93,40 @@ const useWebsocket = () => {
     }
   );
 
-  useEffect(() => {
-    onliners.forEach((address: string) => {
-      if (!onlinerMap.get(address)) {
-        onlinerMap.set(address, { address, name: '', bns: '', status: '' })
-      }
-    })
-  }, [onliners, onlinerMap])
-
   const resolveBNS = useCallback(async (peers: string[]) => {
     if (getBNS) {
-      peers.forEach(async (peer) => {
-        const name = await getBNS(peer)
+      peers.forEach(async (address) => {
+        const bns = await getBNS(address)
 
-        if (name) {
-          onlinerMap.set(peer, { ...onlinerMap.get(peer)!, bns: name })
+        if (bns) {
+          dispatch({ type: 'changeName', payload: { peer: address, key: 'bns', name: bns } })
         }
       })
     }
-  }, [getBNS, onlinerMap])
+  }, [getBNS])
 
-  const resolveENS = useCallback(async (onliners: string[]) => {
+  const resolveENS = useCallback(async (peers: string[]) => {
     if (provider) {
-      onliners.forEach(async (address) => {
-        const name = await provider.lookupAddress(address)
+      peers.forEach(async (address) => {
+        const ens = await provider.lookupAddress(address)
 
-        if (name) {
-          const _address = await provider.resolveName(name)
+        if (ens) {
+          const _address = await provider.resolveName(ens)
 
           if (_address && address === _address.toLowerCase()) {
-            onlinerMap.set(address, { ...onlinerMap.get(address)!, name })
+            dispatch({ type: 'changeName', payload: { peer: address, key: 'ens', name: ens } })
           }
         }
       })
     }
-  }, [provider, onlinerMap])
+  }, [provider])
 
   useEffect(() => {
-    resolveBNS(onliners)
-    resolveENS(onliners)
-  }, [onliners, resolveENS, resolveBNS])
+    resolveBNS(Object.keys(state).filter((address) => state[address] && !state[address].bns))
+    resolveENS(Object.keys(state).filter((address) => state[address] && !state[address].ens))
+  }, [resolveENS, resolveBNS, state])
 
-  const changeStatus = useCallback((status: 'join' | 'leave') => {
+  const sendMessage = useCallback((status: 'join' | 'leave') => {
     console.group(`change status`)
     console.log(`time`, new Date().toLocaleTimeString())
     console.log(`status: ${status}`)
@@ -96,21 +156,29 @@ const useWebsocket = () => {
     if (lastJsonMessage) {
       // @ts-ignore
       const { did, data } = lastJsonMessage
+      const address = `${did}`.toLowerCase()
 
       if (data === 'join') {
-        setOnliners((prev) => [...prev.filter(peer => peer.toLowerCase() !== did.toLowerCase()), did.toLowerCase()])
+        setOnliners((prev) => [...prev.filter(peer => peer.toLowerCase() !== address), address])
+
+        dispatch({ type: 'join', payload: { peer: address } })
       } else if (data === 'leave') {
-        setOnliners((prev) => prev.filter(o => o.toLowerCase() !== did.toLowerCase()))
+        setOnliners((prev) => prev.filter(o => o.toLowerCase() !== address))
+
+        dispatch({ type: 'leave', payload: { peer: address } })
       } else if (data.list) {
+        // on connect or reconnect
         setOnliners(data.list)
+
+        dispatch({ type: 'connected', payload: { peers: data.list } })
       }
     }
   }, [lastJsonMessage])
 
   return {
-    onliners,
-    onlinerMap,
-    changeStatus
+    state,
+    dispatch,
+    sendMessage,
   }
 }
 
