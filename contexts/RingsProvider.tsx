@@ -1,8 +1,15 @@
-import { useEffect, useState, useCallback, createContext } from 'react'
+import { useEffect, useState, useCallback, createContext, useContext, useReducer } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
+<<<<<<< HEAD
 import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug, log_level } from '@ringsnetwork/rings-node'
+=======
+import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
+
+import useBNS from '../hooks/useBNS';
+import formatAddress from '../utils/formatAddress';
+>>>>>>> master
 export interface Chat_props {
   from: string,
   to: string,
@@ -10,9 +17,7 @@ export interface Chat_props {
 }
 
 interface RingsContext {
-  peers: Peer[],
   client: Client | null,
-  chats: Map<string, Chat_props[]>,
   fetchPeers: () => Promise<void>,
   sendMessage: (to: string, message: string) => Promise<void>,
   connectByAddress: (address: string) => Promise<void>,
@@ -26,21 +31,29 @@ interface RingsContext {
   status: string,
   setStatus: (status: string) => void,
   disconnect: () => void,
+<<<<<<< HEAD
   peerMap: Map<string, PeerMapProps>,
   readAllMessages: (address: string) => void
+=======
+  state: StateProps,
+  dispatch: React.Dispatch<any>,
+  startChat: (peer: string) => void,
+  endChat: (peer: string) => void,
+>>>>>>> master
 }
 interface PeerMapProps {
-  address: string,
-  state: string | undefined,
-  transport_id: string,
-  hasNewMessage: boolean,
-  name: string,
+  [key: string] : {
+    address: string,
+    state: string | undefined,
+    transport_id: string,
+    name: string,
+    bns: string,
+    ens: string,
+  }
 }
 
 export const RingsContext = createContext<RingsContext>({
-  peers: [],
   client: null,
-  chats: new Map(),
   fetchPeers: async () => {},
   sendMessage: async () => {},
   connectByAddress: async () => {},
@@ -54,12 +67,138 @@ export const RingsContext = createContext<RingsContext>({
   status: 'disconnected',
   setStatus: () => {},
   disconnect: () => {},
-  peerMap: new Map(),
-  readAllMessages: () => {}
+  state: {peerMap: {}, chatMap: {}, activePeers: [], activePeer: ''} as StateProps,
+  dispatch: () => {},
+  startChat: () => {},
+  endChat: () => {},
 })
+
+export const useRings = () => useContext(RingsContext)
+
+interface ChatMapProps {
+  [key: string]: {
+    messages: Chat_props[],
+    status: string,
+  }
+}
+
+interface StateProps {
+  peerMap: PeerMapProps,
+  chatMap: ChatMapProps,
+  activePeers: string[],
+  activePeer: string,
+}
+
+const FETCH_PEERS = 'FETCH_PEERS'
+const CHANGE_NAME = 'CHANGE_NAME'
+const RECEIVE_MESSAGE = 'RECEIVE_MESSAGE'
+const ACTIVE_CHAT = 'ACTIVE_CHAT'
+const END_CHAT = 'END_CHAT'
+
+const reducer = (state: StateProps, { type, payload }: { type: string, payload: any } ) => {
+  console.log('reducer', type, payload)
+  switch (type) {
+    case FETCH_PEERS:
+      const peerMap = state.peerMap
+      const chatMap = state.chatMap
+
+      const keys = Object.keys(state.peerMap)
+      const disconnectedPeers = keys.filter(key => !payload.peers.includes(key))
+
+      disconnectedPeers.forEach((address: string) => {
+        peerMap[address] = {
+          ...peerMap[address],
+          state: 'disconnected',
+        }
+      })
+
+      payload.peers.forEach(({ address, ...rest }: Peer) => {
+        const _address = address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase()
+
+        if (!state.peerMap[_address]) {
+            peerMap[_address] = {
+              ...rest,
+              address: _address,
+              name: formatAddress(_address),
+              bns: '',
+              ens: '',
+            }
+
+            chatMap[_address] = {
+              messages: [],
+              status: ''
+            }
+        } else {
+          peerMap[_address] = {
+            ...state.peerMap[_address],
+            ...rest,
+          }
+        }
+      })
+
+      return {
+        ...state,
+        peerMap,
+        chatMap
+      }
+    case CHANGE_NAME:
+      return {
+        ...state,
+        peerMap: {
+          ...state.peerMap,
+          [payload.peer]: {
+            ...state.peerMap[payload.peer],
+            [payload.key]: payload.name,
+          }
+        }
+      }
+    case ACTIVE_CHAT:
+      return {
+        ...state,
+        chatMap: {
+          ...state.chatMap,
+          [payload.peer]: {
+            ...state.chatMap[payload.peer],
+            status: 'read',
+          }
+        },
+        activePeer: payload.peer,
+        activePeers: !state.activePeers.includes(payload.peer) ? [...state.activePeers, payload.peer] : state.activePeers
+      }
+    case END_CHAT:
+      const activePeers = state.activePeers.filter(peer => peer !== payload.peer)
+
+      return {
+        ...state,
+        chatMap: {
+          ...state.chatMap,
+          [payload.peer]: {
+            ...state.chatMap[payload.peer],
+            status: 'read',
+          }
+        },
+        activePeer: activePeers.length ? activePeers[activePeers.length - 1] : '',
+        activePeers
+      }
+    case RECEIVE_MESSAGE:
+      return {
+        ...state,
+        chatMap: {
+          ...state.chatMap,
+          [payload.peer]: {
+            messages: state.chatMap[payload.peer] ? [...state.chatMap[payload.peer].messages, payload.message] : [payload.message],
+            status: state.activePeer === payload.peer ? 'read' : 'unread',
+          }
+        },
+      }
+    default:
+      return state
+  }
+}
 
 const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { account, provider } = useWeb3React()
+  const { getBNS } = useBNS()
 
   const [turnUrl, setTurnUrl] = useState('')
   const [nodeUrl, setNodeUrl] = useState('')
@@ -68,75 +207,77 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const [client, setClient] = useState<Client | null>(null)
   const [wasm, setWasm] = useState<any>(null)
-  const [peers, setPeers] = useState<Peer[]>([])
-  const [peerMap, setPeerMap] = useState<Map<string, PeerMapProps>>(new Map())
 
-  const [chats, setChats] = useState<Map<string, Chat_props[]>>(new Map())
+  const [state, dispatch] = useReducer(reducer, { peerMap: {}, chatMap: {}, activePeers: [], activePeer: '' })
 
   const fetchPeers = useCallback(async () => {
-    if (client) {
+    if (client && status === 'connected') {
       const peers = await client.list_peers()
       const pending = await client.list_pendings()
 
-      setPeers([
-        ...peers.map(({ address, ...rest }: Peer) => ({
-          ...rest,
-          address: address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase(),
-        }))
-      ])
       console.log("peers: ", peers)
       console.log("pendings: ", pending)
     }
-  }, [client])
+  }, [client, status])
 
-  const resolveENS = useCallback(async (peers: Peer[]) => {
+  const resolveENS = useCallback(async (peers: string[]) => {
     if (provider) {
       peers.forEach(async (peer) => {
-        const name = await provider.lookupAddress(peer.address)
+        const ens = await provider.lookupAddress(peer)
 
-        if (name) {
-          const address = await provider.resolveName(name)
+        if (ens) {
+          const address = await provider.resolveName(ens)
 
-          if (address && peer.address === address.toLowerCase()) {
-            peerMap.set(peer.address, { ...peerMap.get(peer.address)!, name })
+          if (address && peer === address.toLowerCase()) {
+            dispatch({ type: CHANGE_NAME, payload: { peer, key: 'ens', name: ens } })
           }
         }
       })
     }
-  }, [provider, peerMap])
+  }, [provider])
 
-  useEffect(() => {
-    peers.forEach((peer: Peer) => {
-      if (!peerMap.get(peer.address)) {
-        peerMap.set(peer.address, { ...peer, hasNewMessage: false, name: '' })
-      }
-    })
+  const resolveBNS = useCallback(async (peers: string[]) => {
+    if (getBNS) {
+      peers.forEach(async (peer) => {
+        const bns = await getBNS(peer)
 
-    resolveENS(peers)
-  }, [peers, peerMap, resolveENS])
-
-  const readAllMessages = useCallback((address: string) => {
-    if (address) {
-      peerMap.set(address, {
-        ...peerMap.get(address)!,
-        hasNewMessage: false
+        if (bns) {
+          dispatch({ type: CHANGE_NAME, payload: { peer, key: 'bns', name: bns } })
+        }
       })
     }
-  }, [peerMap])
+  }, [getBNS])
+
+  useEffect(() => {
+    resolveBNS(Object.keys(state).filter((address) => state.peerMap[address] && !state.peerMap[address].bns))
+    resolveENS(Object.keys(state).filter((address) => state.peerMap[address] && !state.peerMap[address].ens))
+  }, [state, resolveENS, resolveBNS])
+
+  const startChat = useCallback((address: string) => {
+    if (address) {
+      dispatch({ type: ACTIVE_CHAT, payload: { peer: address } })
+    }
+  }, [])
+
+  const endChat = useCallback((address: string) => {
+    if (address) {
+      dispatch({ type: END_CHAT, payload: { peer: address } })
+    }
+  }, [])
 
   const sendMessage = useCallback(async (to: string, message: string) => {
-    if (client && peers.length) {
+    if (client) {
       await client.send_message(to, new TextEncoder().encode(message))
 
-      chats.set(to, [...chats.get(to)!, { from: account!, to, message }])
+      dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account!, to, message } } })
     }
-  }, [client, peers, chats, account])
+  }, [client, account])
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
-      // console.log(`connect by address: ${address}`)
+      console.log(`connect by address: ${address}`)
       await client.connect_with_address(address)
-      // console.log(`connected`)
+      console.log(`connected`)
     }
   }, [client])
 
@@ -165,12 +306,20 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [client])
 
   const disconnect = useCallback(async () => {
-    if (client && peers.length) {
-      const promises = peers.map(async ({ address }) => await client.disconnect(address))
+    const peers = Object.keys(state.peerMap)
 
-      await Promise.all(promises)
+    if (client && peers.length) {
+      try {
+        console.log(`disconnect start`)
+        const promises = peers.map(async (address) => await client.disconnect(address))
+
+        await Promise.all(promises)
+        console.log(`disconnect done`)
+      } catch (e) {
+        console.log(`disconnect error`, e)
+      }
     }
-  }, [client, peers])
+  }, [client, state])
 
   useEffect(() => {
     const turnUrl = localStorage.getItem('turnUrl') || process.env.NEXT_PUBLIC_TURN_URL!
@@ -211,6 +360,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     if (account && provider && wasm && turnUrl && nodeUrl) {
       // debug(true)
       log_level("trace");
+//      debug(process.env.NODE_ENV !== 'development')
       setStatus('connecting')
 
       const unsignedInfo = new UnsignedInfo(account);
@@ -235,17 +385,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           // console.log(`from`, from)
           // console.log(`to`, to)
 
-          if (chats.get(from)) {
-            chats.set(from, [...chats.get(from)!, { from, to, message: new TextDecoder().decode(message) }])
-          } else {
-            chats.set(from, [{ from, to, message: new TextDecoder().decode(message) }])
-          }
-
-          peerMap.set(from, {
-            ...peerMap.get(from)!,
-            hasNewMessage: true
-          })
-
+          dispatch({ type: RECEIVE_MESSAGE, payload: { peer: from, message: { from, to, message: new TextDecoder().decode(message) } } })
           // console.log(chats.get(from))
           // console.groupEnd()
         }, async (
@@ -260,11 +400,15 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       await client.listen(callback)
 
-      /* const promises = nodeUrl.split(';').map(
-	 async (url: string) => await client.connect_peer_via_http(nodeUrl)
-       * ) */
-      await client.connect_peer_via_http(nodeUrl);
-      // await Promise.any(promises)
+      const promises = nodeUrl.split(';').map(async (url: string) =>
+        await client.connect_peer_via_http(nodeUrl)
+      )
+
+      try {
+        await Promise.any(promises)
+      } catch (e) {
+        console.error(e)
+      }
 
       setStatus('connected')
 
@@ -272,7 +416,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('disconnected')
       }
     }
-  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap])
+  }, [account, wasm, provider, turnUrl, nodeUrl])
 
   useEffect(() => {
     if (account && provider && wasm && turnUrl && nodeUrl) {
@@ -283,14 +427,12 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('failed')
       }
     }
-  }, [account, wasm, provider, chats, turnUrl, nodeUrl, peerMap, initClient])
+  }, [account, wasm, provider, turnUrl, nodeUrl, initClient])
 
   return (
     <RingsContext.Provider
       value={{
         client,
-        peers,
-        chats,
         fetchPeers,
         sendMessage,
         connectByAddress,
@@ -304,8 +446,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         status,
         setStatus,
         disconnect,
-        peerMap,
-        readAllMessages
+        state,
+        dispatch,
+        startChat,
+        endChat,
       }}
     >
       {children}
