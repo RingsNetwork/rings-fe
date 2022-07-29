@@ -44,16 +44,11 @@ const { publicRuntimeConfig } = getConfig()
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
   const { account } = useWeb3React()
-  const { chats, peers, sendMessage, connectByAddress, peerMap, readAllMessages } = useRings()
+  const { sendMessage, connectByAddress, state: ringsState, startChat, endChat } = useRings()
   const { sendMessage: changeStatus, state: onlinerMap, dispatch: onlinerDispatch } = useWebsocket()
   const accountName = useENS()
 
   const { colorMode } = useColorMode() 
-
-  const [groups, setGroups] = useState<any[]>([])
-
-  const [activeChat, setActiveChat] = useState<string | null>(null)
-  const [chatList, setChatList] = useState<string[]>([])
 
   const [message, setMessage] = useState<string>('')
 
@@ -90,16 +85,17 @@ const Home: NextPage = () => {
   }, [inputing])
   
   const handleSendMessage = useCallback(async () => {
-    if (sending || !message || !activeChat) {
+    if (sending || !message || !ringsState.activePeer) {
       return false
     }
 
     try {
       setSending(true)
-      await sendMessage(activeChat, message)
+      await sendMessage(ringsState.activePeer, message)
 
       setMessage('')
       setSending(false)
+
       if (inputRef.current) {
         inputRef.current.value = ''
       }
@@ -108,7 +104,7 @@ const Home: NextPage = () => {
     } catch (e) {
       setSending(false)
     }
-  }, [message, activeChat, sending, sendMessage])
+  }, [message, ringsState, sending, sendMessage])
 
   const handleJoinPublicRoom = useCallback((status: 'join' | 'leave') => {
     if (account) {
@@ -131,7 +127,6 @@ const Home: NextPage = () => {
       await connectByAddress(address)
      
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connected' }})
-      
     } catch (e) {
       console.error(e)
 
@@ -249,12 +244,12 @@ const Home: NextPage = () => {
                           {
                             peer.toLowerCase() === account.toLowerCase() ?
                             <>
-                              <Box>{onlinerMap[peer]?.bns || peerMap.get(peer)?.bns || onlinerMap[peer]?.ens || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
+                              <Box>{onlinerMap[peer]?.bns || ringsState.peerMap[peer]?.bns || onlinerMap[peer]?.ens || ringsState.peerMap[peer]?.name || onlinerMap[peer].name}</Box>
                               <Box>You</Box> 
                             </> :
                             <>
                               <Tooltip label="add to contacts">
-                                <Box>{onlinerMap[peer]?.bns || peerMap.get(peer)?.bns || onlinerMap[peer]?.ens || peerMap.get(peer)?.name || formatAddress(peer)}</Box>
+                                <Box>{onlinerMap[peer]?.bns || ringsState.peerMap[peer]?.bns || onlinerMap[peer]?.ens || ringsState.peerMap[peer]?.name || onlinerMap[peer].name}</Box>
                               </Tooltip>
                               {
                                 onlinerMap[peer]?.status ? <Box>{onlinerMap[peer]?.status}</Box> : null
@@ -269,50 +264,37 @@ const Home: NextPage = () => {
               }
 
               {
-                peers.length ?
+                Object.keys(ringsState.peerMap).length ?
                 <Box>
                   <Box fontSize={10} mb="15px" color="#757D8A">Contact</Box>
                   <Box>
                       {
-                        peers.map((peer) => (
+                        Object.keys(ringsState.peerMap).map((peer) => (
                           <Flex 
                             mb="20px" 
-                            cursor={ peer.state === 'connected' ? 'pointer' : 'default'}
+                            cursor="pointer"
                             justifyContent="space-between" 
                             alignItems="center" 
-                            key={peer.address} 
+                            key={peer} 
                             onClick={() => {
-                              if (peer.state !== 'connected') {
-                                return
-                              }
-
-                              readAllMessages(peer.address)
-                              setActiveChat(peer.address)
+                              startChat(peer)
                               setSending(false)
-
-                              if (!chatList.includes(peer.address)) {
-                                setChatList([...chatList, `${peer.address}`])
-                              }
-
-                              if (!chats.get(peer.address)) {
-                                chats.set(peer.address, [])
-                              }
+                              setMessage('')
                           }}>
                             <Box>
                               {
-                                onlinerMap[peer.address]?.bns || 
-                                peerMap.get(peer.address)?.bns || 
-                                onlinerMap[peer.address]?.name || 
-                                peerMap.get(peer.address)?.name || 
-                                formatAddress(peer.address)
+                                onlinerMap[peer]?.bns || 
+                                ringsState.peerMap[peer]?.bns || 
+                                onlinerMap[peer]?.ens || 
+                                ringsState.peerMap[peer]?.ens || 
+                                onlinerMap[peer]?.name || 
+                                ringsState.peerMap[peer]?.name
                               }
                             </Box>
                             <Flex justifyContent="flex-end" alignItems="center">
-                              <Box mr="5px">{peer.state}</Box>
+                              <Box m="0 5px 0 10px">{ringsState.peerMap[peer].state}</Box>
                               {
-                                activeChat !== peer.address &&
-                                peerMap.get(peer.address)?.hasNewMessage
-                                ?
+                                ringsState.chatMap[peer]?.status === 'unread' ?
                                 <Box w="6px" h="6px" borderRadius="50%" bg="red"></Box> : 
                                 <Box w="6px" h="6px" borderRadius="50%" bg="transparent"></Box> 
                               }
@@ -345,20 +327,16 @@ const Home: NextPage = () => {
     const renderHd = () => {
       let hds: Array<React.ReactNode> = []
 
-      chatList.forEach((key, i) => {
-        hds.push(<Tab key={i}>
+      ringsState.activePeers.forEach((peer, i) => {
+        hds.push(<Tab key={peer}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{peerMap.get(key)?.bns || peerMap.get(key)?.name || formatAddress(key)}</Box>
+            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer].name}</Box>
             <Box
               ml="20px"
               onClick={() => {
-                const list = chatList.filter((item) => item !== key)
-
                 setSending(false)
-                readAllMessages(key)
-
-                setActiveChat(list.length ? list[0] : null)
-                setChatList(list)
+                endChat(peer)
+                setMessage('')
               }}
             >
               <MdOutlineClose size="12px" />
@@ -375,8 +353,8 @@ const Home: NextPage = () => {
     const renderMessages = () => {
       let messages: Array<React.ReactNode> = []
 
-      if (activeChat && chats.get(activeChat)) {
-        messages = chats.get(activeChat)!.map(({ message, from }, i) => {
+      if (ringsState.activePeer && ringsState.chatMap[ringsState.activePeer]) {
+        messages = ringsState.chatMap[ringsState.activePeer].messages.map(({ message, from }, i) => {
           return (
             <Box 
               key={`${message}-${i}`}
@@ -384,7 +362,11 @@ const Home: NextPage = () => {
             >
               <Flex alignItems="center">
                 <Box color={ from.toLowerCase() === account?.toLowerCase() ? "#15CD96" : '#757d8a'} mr="10px">
-                  {peerMap.get(from?.toLowerCase())?.bns || peerMap.get(from?.toLowerCase())?.name || formatAddress(from)} &gt; 
+                  { 
+                    from.toLowerCase() === account?.toLowerCase() ?
+                    accountName:
+                    ringsState.peerMap[from.toLowerCase()]?.bns || ringsState.peerMap[from.toLowerCase()]?.ens || ringsState.peerMap[from.toLowerCase()]?.name 
+                  } &gt; 
                 </Box>
                 <Box>{message}</Box>
               </Flex>
@@ -407,9 +389,9 @@ const Home: NextPage = () => {
           <Box>
             <Tabs 
               variant='enclosed' 
-              index={chatList.findIndex(key => key === activeChat)} 
+              index={ ringsState.activePeers.findIndex(key => key === ringsState.activePeer) } 
               onChange={(index) => {
-                setActiveChat(chatList[index])
+                startChat(ringsState.activePeers[index])
               }}
             >
               {renderHd()}
@@ -422,8 +404,10 @@ const Home: NextPage = () => {
           <Flex>
             <Input 
               ref={inputRef}
-              disabled={!account || !activeChat 
-                // || peerMap.get(activeChat)?.state !== 'connected'
+              disabled={
+                !account || 
+                !ringsState.activePeer ||
+                ringsState.peerMap[ringsState.activePeer]?.state !== 'connected' 
               }
               fontSize={10} 
               mr="15px" 
@@ -440,8 +424,8 @@ const Home: NextPage = () => {
             <Button 
               disabled={
                 !account || 
-                !activeChat || 
-                // peerMap.get(activeChat)?.state !== 'connected' || 
+                !ringsState.activePeer || 
+                ringsState.peerMap[ringsState.activePeer]?.state !== 'connected' || 
                 !message
               } 
               isLoading={sending} 
