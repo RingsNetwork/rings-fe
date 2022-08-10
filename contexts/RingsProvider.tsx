@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback, createContext, useContext, useReducer } from 'react'
-import { useWeb3React } from '@web3-react/core'
-import web3 from "web3";
 
-import init, { Client, Peer, UnsignedInfo, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
+import init, { Client, Peer, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
 
+import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS';
 import formatAddress from '../utils/formatAddress';
+
 export interface Chat_props {
   from: string,
   to: string,
@@ -188,8 +188,8 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
 }
 
 const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { account, provider } = useWeb3React()
   const { getBNS } = useBNS()
+  const { account, unsignedInfo, signature, provider, addressType } = useMultiWeb3()
 
   const [turnUrl, setTurnUrl] = useState('')
   const [nodeUrl, setNodeUrl] = useState('')
@@ -265,10 +265,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
       console.log(`connect by address: ${address}`)
-      await client.connect_with_address(address)
+      await client.connect_with_address(address, addressType)
       console.log(`connected`)
     }
-  }, [client])
+  }, [client, addressType])
 
   const createOffer = useCallback(async () => {
     if (client) {
@@ -300,7 +300,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     if (client && peers.length) {
       try {
         console.log(`disconnect start`)
-        const promises = peers.map(async (address) => await client.disconnect(address))
+        const promises = peers.map(async (address) => await client.disconnect(address, addressType))
 
         await Promise.all(promises)
         console.log(`disconnect done`)
@@ -308,7 +308,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         console.log(`disconnect error`, e)
       }
     }
-  }, [client, state])
+  }, [client, state, addressType])
 
   useEffect(() => {
     const turnUrl = localStorage.getItem('turnUrl') || process.env.NEXT_PUBLIC_TURN_URL!
@@ -346,17 +346,11 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [wasm])
 
   const initClient = useCallback(async() => {
-    if (account && provider && wasm && turnUrl && nodeUrl) {
+    if (account && wasm && turnUrl && nodeUrl && signature && unsignedInfo) {
       debug(process.env.NODE_ENV !== 'development') 
       setStatus('connecting')
-      
-      const unsignedInfo = new UnsignedInfo(account);
-      // @ts-ignore
-      const signer = provider.getSigner(account);
-      const signed = await signer.signMessage(unsignedInfo.auth);
-      const sig = new Uint8Array(web3.utils.hexToBytes(signed));
 
-      const client = await Client.new_client(unsignedInfo, sig, turnUrl);
+      const client = await Client.new_client(unsignedInfo, signature, turnUrl);
       setClient(client)
 
       const callback = new MessageCallbackInstance(
@@ -392,7 +386,8 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       )
 
       try {
-        await Promise.any(promises)
+        // await Promise.any(promises)
+        await client.connect_peer_via_http(nodeUrl)
       } catch (e) {
         console.error(e)
       }
@@ -403,10 +398,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('disconnected')
       }
     }
-  }, [account, wasm, provider, turnUrl, nodeUrl])
+  }, [account, wasm, turnUrl, nodeUrl, signature, unsignedInfo])
 
   useEffect(() => {
-    if (account && provider && wasm && turnUrl && nodeUrl) {
+    if (account && wasm && turnUrl && nodeUrl && signature && unsignedInfo) {
       try {
         initClient()
       } catch (e) {
@@ -414,7 +409,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         setStatus('failed')
       }
     }
-  }, [account, wasm, provider, turnUrl, nodeUrl, initClient])
+  }, [account, wasm, turnUrl, nodeUrl, initClient, signature, unsignedInfo])
 
   return (
     <RingsContext.Provider

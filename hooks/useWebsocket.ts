@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useReducer } from 'react'
-import { useWeb3React } from '@web3-react/core'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
+import useMultiWeb3 from '../hooks/useMultiWeb3'
 
 import useBNS from './useBNS'
 import formatAddress from '../utils/formatAddress'
@@ -75,7 +75,7 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
 const useWebsocket = () => {
   const didUnmount = useRef(false)
 
-  const { account, provider } = useWeb3React()
+  const { account, provider } = useMultiWeb3()
   const { getBNS } = useBNS()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 

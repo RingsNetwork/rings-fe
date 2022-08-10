@@ -30,7 +30,7 @@ const AccountButton: React.FC = () => {
   return (
     <Center>
       <Box>
-        <Button cursor="pointer" onClick={onOpen}>Connect Wallet</Button>
+        <Box cursor="pointer" onClick={onOpen}>Ethereum</Box>
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
