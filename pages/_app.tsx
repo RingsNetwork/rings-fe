@@ -4,6 +4,7 @@ import Web3Provider from '../contexts/Web3Provider'
 import RingsProvider from '../contexts/RingsProvider'
 import { SolanaProvider } from '../contexts/SolanaProvider'
 import MultiWeb3Provider from '../contexts/MultiWeb3Provider'
+import WebsocketProvider from '../contexts/WebsocketProvider'
 
 import theme from '../theme'
 
@@ -17,9 +18,11 @@ function MyApp({ Component, pageProps }: AppProps) {
       <Web3Provider>
         <SolanaProvider>
           <MultiWeb3Provider>
-            <RingsProvider>
-              <Component {...pageProps} />
-            </RingsProvider>
+            <WebsocketProvider>
+              <RingsProvider>
+                <Component {...pageProps} />
+              </RingsProvider>
+            </WebsocketProvider>
           </MultiWeb3Provider>
         </SolanaProvider>
       </Web3Provider>
