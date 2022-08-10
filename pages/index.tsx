@@ -35,18 +35,20 @@ import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
 import useENS from '../hooks/useENS';
+import useMultiWeb3 from '../hooks/useMultiWeb3';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
-const AccountButton = dynamic(() => import('../components/AccountButton'), { ssr: false })
+const ConnectWallet = dynamic(() => import("../components/ConnectWallet"), { ssr: false })
 
 const { publicRuntimeConfig } = getConfig()
 
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
-  const { account } = useWeb3React()
+  // const { account } = useWeb3React()
+  const { account, accountName } = useMultiWeb3()
   const { sendMessage, connectByAddress, state: ringsState, startChat, endChat } = useRings()
   const { sendMessage: changeStatus, state: onlinerMap, dispatch: onlinerDispatch } = useWebsocket()
-  const accountName = useENS()
+  // const accountName = useENS()
 
   const { colorMode } = useColorMode() 
 
@@ -198,7 +200,8 @@ const Home: NextPage = () => {
                   base: 'space-between',
                   sm: 'space-around',
                 }}>
-                  <AccountButton />
+                  {/* <AccountButton /> */}
+                  <ConnectWallet />
                   <Center
                     alignItems="center"
                     display={{
@@ -316,6 +319,9 @@ const Home: NextPage = () => {
             <ThemeToogle />
             <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Node: {publicRuntimeConfig?.ringsNodeVersion}</Box>
             <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Chat: {publicRuntimeConfig?.ringsChatVersion}</Box>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">
+              Powered by <a href="https://ringsnetwork.io/">Ringsnetwork</a>
+            </Box>
           </Box>
 
         </Flex>
@@ -368,7 +374,7 @@ const Home: NextPage = () => {
                     ringsState.peerMap[from.toLowerCase()]?.bns || ringsState.peerMap[from.toLowerCase()]?.ens || ringsState.peerMap[from.toLowerCase()]?.name 
                   } &gt; 
                 </Box>
-                <Box>{message}</Box>
+                <Box fontSize="12px">{message}</Box>
               </Flex>
             </Box>
           )
@@ -457,11 +463,23 @@ const Home: NextPage = () => {
               <Box color="#757D8A" ml="10px">Rings Chat</Box>
             </Center>
           </Center>
+
           <Card>
             <Flex p="15px" fontSize="26px" justifyContent="space-around" alignItems="center">
               {time}
             </Flex>
           </Card>
+
+          <Box display={{
+            base: 'block',
+            sm: 'none',
+          }}>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Node: {publicRuntimeConfig?.ringsNodeVersion}</Box>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">Rings Chat: {publicRuntimeConfig?.ringsChatVersion}</Box>
+            <Box fontSize="8px" color="#757D8A" mt="10px" textAlign="center">
+              Powered by <a href="https://ringsnetwork.io/">Ringsnetwork</a>
+            </Box>
+          </Box>
 
           {/* <Box>
             <div className={styles['mod-network']}>

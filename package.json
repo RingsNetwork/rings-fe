@@ -1,6 +1,6 @@
 {
   "name": "rings-chat",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003",
@@ -13,8 +13,12 @@
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",
     "@ensdomains/eth-ens-namehash": "^2.0.15",
+    "@project-serum/sol-wallet-adapter": "^0.2.6",
     "@ringsnetwork/bns-util": "^0.2.0",
-    "@ringsnetwork/rings-node": "0.2.0-dev-20220731.0",
+    "@ringsnetwork/rings-node": "0.2.1-dev-20220810.1",
+    "@solana/wallet-adapter-base": "^0.9.10",
+    "@solana/wallet-adapter-phantom": "^0.9.9",
+    "@solana/web3.js": "^1.50.1",
     "@walletconnect/ethereum-provider": "^1.7.7",
     "@web3-react/core": "8.0.23-beta.0",
     "@web3-react/metamask": "8.0.19-beta.0",
