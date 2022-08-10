@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, createContext, useContext, useReducer } from 'react'
 
-import init, { Client, Peer, MessageCallbackInstance, debug } from '@ringsnetwork/rings-node'
+import init, { Client, Peer, MessageCallbackInstance, debug, AddressType } from '@ringsnetwork/rings-node'
 
 import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS';
+import useWebsocket from '../hooks/useWebsocket'
+
 import formatAddress from '../utils/formatAddress';
 
 export interface Chat_props {
@@ -190,6 +192,7 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
 const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { getBNS } = useBNS()
   const { account, unsignedInfo, signature, provider, addressType } = useMultiWeb3()
+  const { dispatch: onlinerDispatch } = useWebsocket()
 
   const [turnUrl, setTurnUrl] = useState('')
   const [nodeUrl, setNodeUrl] = useState('')
@@ -206,8 +209,14 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       const peers = await client.list_peers()
 
       dispatch({ type: FETCH_PEERS, payload: { peers } })
+
+      peers.forEach(( { address }: Peer) => {
+        const peer = address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase()
+
+        onlinerDispatch({ type: 'changeStatus', payload: { peer, status: 'connected' }})
+      })
     }
-  }, [client, status])
+  }, [client, status, onlinerDispatch])
 
   const resolveENS = useCallback(async (peers: string[]) => {
     if (provider) {
@@ -265,10 +274,12 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
       console.log(`connect by address: ${address}`)
-      await client.connect_with_address(address, addressType)
+      // TODO
+      // use addressType for current address
+      await client.connect_with_address(address, AddressType.DEFAULT)
       console.log(`connected`)
     }
-  }, [client, addressType])
+  }, [client])
 
   const createOffer = useCallback(async () => {
     if (client) {
@@ -347,10 +358,12 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const initClient = useCallback(async() => {
     if (account && wasm && turnUrl && nodeUrl && signature && unsignedInfo) {
+      console.log(`initClient`)
       debug(process.env.NODE_ENV !== 'development') 
       setStatus('connecting')
 
       const client = await Client.new_client(unsignedInfo, signature, turnUrl);
+      console.log(`client`, client)
       setClient(client)
 
       const callback = new MessageCallbackInstance(

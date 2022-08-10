@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useWeb3React } from '@web3-react/core'
 
 import type { NextPage } from 'next'
 import Head from 'next/head'
@@ -34,7 +33,6 @@ import ConnectByManual from '../components/ConnectByManual'
 import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
-import useENS from '../hooks/useENS';
 import useMultiWeb3 from '../hooks/useMultiWeb3';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
@@ -123,6 +121,14 @@ const Home: NextPage = () => {
       return
     }
 
+    if (onlinerMap[address]?.status === 'connected') {
+      startChat(address)
+      setSending(false)
+      setMessage('')
+
+      return
+    }
+
     try {
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connecting' }})
 
@@ -134,7 +140,7 @@ const Home: NextPage = () => {
 
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: '' }})
     }
-  }, [connectByAddress, account, onlinerMap, onlinerDispatch])
+  }, [connectByAddress, account, onlinerMap, onlinerDispatch, startChat])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -251,7 +257,7 @@ const Home: NextPage = () => {
                               <Box>You</Box> 
                             </> :
                             <>
-                              <Tooltip label="add to contacts">
+                              <Tooltip label={onlinerMap[peer]?.status ? '': 'add to contacts'}>
                                 <Box>{onlinerMap[peer]?.bns || ringsState.peerMap[peer]?.bns || onlinerMap[peer]?.ens || ringsState.peerMap[peer]?.name || onlinerMap[peer].name}</Box>
                               </Tooltip>
                               {
