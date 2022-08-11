@@ -210,10 +210,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       dispatch({ type: FETCH_PEERS, payload: { peers } })
 
-      peers.forEach(( { address }: Peer) => {
+      peers.forEach(( { address, state: status }: Peer) => {
         const peer = address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase()
 
-        onlinerDispatch({ type: 'changeStatus', payload: { peer, status: 'connected' }})
+        onlinerDispatch({ type: 'changeStatus', payload: { peer, status }})
       })
     }
   }, [client, status, onlinerDispatch])
@@ -399,8 +399,8 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       )
 
       try {
-        // await Promise.any(promises)
-        await client.connect_peer_via_http(nodeUrl)
+        await Promise.any(promises)
+        // await client.connect_peer_via_http(nodeUrl)
       } catch (e) {
         console.error(e)
       }
