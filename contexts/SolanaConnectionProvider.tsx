@@ -11,7 +11,7 @@ export type ENV = "mainnet-beta" | "testnet" | "devnet" | "localnet";
 const DEFAULT = ENDPOINTS[0];
 
 interface ConnectionConfig {
-  connection: Connection;
+  connection: Connection | null;
   endpoint: string;
   env: ENV;
   setEndpoint: (val: string) => void;

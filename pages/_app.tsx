@@ -2,7 +2,7 @@ import { ChakraProvider } from '@chakra-ui/react'
 
 import Web3Provider from '../contexts/Web3Provider'
 import RingsProvider from '../contexts/RingsProvider'
-import { SolanaProvider } from '../contexts/SolanaProvider'
+import SolanaProvider from '../contexts/SolanaProvider'
 import MultiWeb3Provider from '../contexts/MultiWeb3Provider'
 import WebsocketProvider from '../contexts/WebsocketProvider'
 
