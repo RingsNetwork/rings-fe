@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useReducer, useRef } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
+import { AddressType } from '@ringsnetwork/rings-node'
 
 import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS'
@@ -20,19 +21,20 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
   console.log(`websocket reducer`, type, payload)
   switch (type) {
     case 'join':
-      const { peer } = payload
+      const { peer: { id, type} } = payload
+      const address = type === 'DEFAULT' ? id.toLowerCase() : id
 
       return {
         ...state,
-        [peer]: {
-          peer,
-          name: formatAddress(peer),
+        [address]: {
+          address,
+          name: formatAddress(id),
           ens: '',
           bns: '',
           status: '',
+          type
         }
       }
-      break
     case 'leave':
       delete state[payload.peer]
 
@@ -40,8 +42,10 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
     case 'connected':
       const { peers } = payload
 
-      return peers.reduce((prev: OnlinerMapProps, peer: string) => {
-        const address = peer.toLowerCase()
+      return peers.reduce((prev: OnlinerMapProps, { id: peer, type }: {id: string, type: string}) => {
+        // eth: DEFAULT
+        // solana: ED25519
+        const address = type === 'DEFAULT' ? peer.toLowerCase() : peer
 
         return {
           ...prev,
@@ -51,6 +55,7 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
             ens: '',
             bns: '',
             status: '',
+            type,
           }
         }
       }, {})
@@ -92,7 +97,7 @@ export const usePublicPeers = () => useContext(WebsocketContext)
 const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const didUnmount = useRef(false)
 
-  const { account, provider } = useMultiWeb3()
+  const { account, provider, addressType } = useMultiWeb3()
   const { getBNS } = useBNS()
   const [socketUrl, setSocketUrl] = useState('wss://api-did-dev.ringsnetwork.io/ws');
 
@@ -150,7 +155,7 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     console.groupEnd()
     if (readyState === ReadyState.OPEN && account) {
       sendJsonMessage({
-        did: account,
+        did: { id: account, type: addressType === AddressType.DEFAULT ? 'DEFAULT' : 'ED25519' },
         timestamp: Date.now(),
         data: status
       })
@@ -158,7 +163,8 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }, [
     readyState,
     account,
-    sendJsonMessage
+    sendJsonMessage,
+    addressType,
   ])
 
   useEffect(() => {
@@ -171,12 +177,11 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     if (lastJsonMessage) {
       // @ts-ignore
       const { did, data } = lastJsonMessage
-      const address = `${did}`.toLowerCase()
 
       if (data === 'join') {
-        dispatch({ type: 'join', payload: { peer: address } })
+        dispatch({ type: 'join', payload: { peer: did } })
       } else if (data === 'leave') {
-        dispatch({ type: 'leave', payload: { peer: address } })
+        dispatch({ type: 'leave', payload: { peer: did.id } })
       } else if (data.list) {
         // on connect or reconnect
         dispatch({ type: 'connected', payload: { peers: data.list } })

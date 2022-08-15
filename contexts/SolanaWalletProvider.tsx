@@ -92,12 +92,12 @@ export function WalletProvider({ children = null as any }) {
     };
   }, [wallet]);
 
-  useEffect(() => {
-    if (wallet && autoConnect) {
-      wallet.connect();
-      setAutoConnect(false);
-    }
-  }, [wallet, autoConnect]);
+  // useEffect(() => {
+  //   if (wallet && autoConnect) {
+  //     wallet.connect();
+  //     setAutoConnect(false);
+  //   }
+  // }, [wallet, autoConnect]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
