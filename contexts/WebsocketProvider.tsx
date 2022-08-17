@@ -60,6 +60,10 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
         }
       }, {})
     case 'changeStatus':
+      if (!state[payload.peer]) {
+        return state
+      }
+
       return {
         ...state,
         [payload.peer]: {
