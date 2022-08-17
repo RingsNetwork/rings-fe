@@ -36,7 +36,10 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
         }
       }
     case 'leave':
-      delete state[payload.peer]
+      const { peer } = payload
+      const realId = peer.type === 'DEFAULT' ? peer.id.toLowerCase() : peer.id
+
+      delete state[realId]
 
       return state
     case 'connected':
@@ -185,7 +188,7 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       if (data === 'join') {
         dispatch({ type: 'join', payload: { peer: did } })
       } else if (data === 'leave') {
-        dispatch({ type: 'leave', payload: { peer: did.id } })
+        dispatch({ type: 'leave', payload: { peer: did } })
       } else if (data.list) {
         // on connect or reconnect
         dispatch({ type: 'connected', payload: { peers: data.list } })
