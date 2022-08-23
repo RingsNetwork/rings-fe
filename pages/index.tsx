@@ -356,7 +356,7 @@ const Home: NextPage = () => {
       ringsState.activePeers.forEach((peer, i) => {
         hds.push(<Tab key={peer}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer].name || formatAddress(peer)}</Box>
+            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer]?.name || formatAddress(peer)}</Box>
             <Box
               ml="20px"
               onClick={() => {

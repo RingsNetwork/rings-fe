@@ -42,6 +42,7 @@ interface RingsContext {
 export interface Peer {
     address: string,
     state: string | undefined,
+    originalAddress: string,
     transport_id: string,
     name: string,
     bns: string,
@@ -124,6 +125,7 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
               bns: '',
               ens: '',
               type,
+              originalAddress: address,
             }
 
             chatMap[_address] = {
@@ -215,9 +217,6 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const [state, dispatch] = useReducer(reducer, { peerMap: {}, chatMap: {}, activePeers: [], activePeer: '' }) 
 
-  // @ts-ignore
-  window.ringsState = state
-
   const fetchPeers = useCallback(async () => {
     if (client && status === 'connected') {
       const peers = await client.list_peers()
@@ -282,13 +281,14 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       console.group('send message')
       console.log(`to`, to)
       console.log(`message`, message)
+      console.log(`address`, state.peerMap[to].originalAddress)
       console.groupEnd()
-      await client.send_message(to, new TextEncoder().encode(message))
+      await client.send_message(state.peerMap[to].originalAddress, new TextEncoder().encode(message))
       console.log(`send message success`)
 
       dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account, to, message } } })
     }
-  }, [client, account])
+  }, [client, account, state.peerMap])
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
