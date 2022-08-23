@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback, createContext, useContext, useReducer } from 'react'
 
-import init, { Client, Peer, MessageCallbackInstance, debug, AddressType } from '@ringsnetwork/rings-node'
+import init, { Client, Peer as NodePeer, MessageCallbackInstance, debug, AddressType } from '@ringsnetwork/rings-node'
 
 import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS';
 import useWebsocket from '../hooks/useWebsocket'
 
 import formatAddress from '../utils/formatAddress';
+import { getAddressWithType } from '../utils';
+
+import { ADDRESS_TYPE } from '../utils/const';
+import { OnlinePeer } from './WebsocketProvider';
 
 export interface Chat_props {
   from: string,
@@ -34,15 +38,18 @@ interface RingsContext {
   startChat: (peer: string) => void,
   endChat: (peer: string) => void,
 }
-interface PeerMapProps {
-  [key: string] : {
+
+export interface Peer {
     address: string,
     state: string | undefined,
     transport_id: string,
     name: string,
     bns: string,
     ens: string,
-  }
+    type: ADDRESS_TYPE,
+}
+interface PeerMapProps {
+  [key: string]: Peer
 }
 
 export const RingsContext = createContext<RingsContext>({
@@ -105,8 +112,8 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
         }
       })
 
-      payload.peers.forEach(({ address, ...rest }: Peer) => {
-        const _address = address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase()
+      payload.peers.forEach(({ address, transport_addr, ...rest }: NodePeer) => {
+        const { type, address: _address} = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
 
         if (!state.peerMap[_address]) {
             peerMap[_address] = {
@@ -115,6 +122,7 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
               name: formatAddress(_address),
               bns: '',
               ens: '',
+              type,
             }
 
             chatMap[_address] = {
@@ -174,13 +182,15 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
         activePeers
       }
     case RECEIVE_MESSAGE:
+      const { address } = getAddressWithType(payload.peer)
+
       return {
         ...state,
         chatMap: {
           ...state.chatMap,
-          [payload.peer]: {
-            messages: state.chatMap[payload.peer] ? [...state.chatMap[payload.peer].messages, payload.message] : [payload.message],
-            status: state.activePeer === payload.peer ? 'read' : 'unread',
+          [address]: {
+            messages: state.chatMap[address] ? [...state.chatMap[address].messages, payload.message] : [payload.message],
+            status: state.activePeer === address ? 'read' : 'unread',
           }
         },
       }
@@ -210,10 +220,10 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       dispatch({ type: FETCH_PEERS, payload: { peers } })
 
-      peers.forEach(( { address, state: status }: Peer) => {
-        const peer = address.startsWith(`0x`) ? address.toLowerCase() : `0x${address}`.toLowerCase()
+      peers.forEach(( { address, state: status }: NodePeer) => {
+        const { address: peer, type} = getAddressWithType(address)
 
-        onlinerDispatch({ type: 'changeStatus', payload: { peer, status }})
+        onlinerDispatch({ type: 'changeStatus', payload: { peer, type, status }})
       })
     }
   }, [client, status, onlinerDispatch])
@@ -247,8 +257,8 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [getBNS])
 
   useEffect(() => {
-    resolveBNS(Object.keys(state).filter((address) => state.peerMap[address] && !state.peerMap[address].bns))
-    resolveENS(Object.keys(state).filter((address) => state.peerMap[address] && !state.peerMap[address].ens))
+    resolveBNS(Object.keys(state).filter((address) => state.peerMap[address] && state.peerMap[address].type === ADDRESS_TYPE.DEFAULT && !state.peerMap[address].bns))
+    resolveENS(Object.keys(state).filter((address) => state.peerMap[address] && state.peerMap[address].type === ADDRESS_TYPE.DEFAULT && !state.peerMap[address].ens))
   }, [state, resolveENS, resolveBNS])
 
   const startChat = useCallback((address: string) => {
@@ -267,16 +277,15 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     if (client) {
       await client.send_message(to, new TextEncoder().encode(message))
 
-      dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account!, to, message } } })
+      dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account, to, message } } })
     }
   }, [client, account])
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
-      console.log(`connect by address: ${address}`)
-      // TODO
-      // use addressType for current address
-      await client.connect_with_address(address, AddressType.DEFAULT)
+      const { address: peer, type } = getAddressWithType(address)
+      console.log(`connect by address: ${peer} ${type}`)
+      await client.connect_with_address(peer, type)
       console.log(`connected`)
     }
   }, [client])

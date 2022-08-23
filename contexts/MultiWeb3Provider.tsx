@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
-import { UnsignedInfo, AddressType, SignerMode } from '@ringsnetwork/rings-node'
+import { UnsignedInfo } from '@ringsnetwork/rings-node'
 
 import { useWallet } from '../contexts/SolanaWalletProvider'
 import useENS from '../hooks/useENS';
 import formatAddress from '../utils/formatAddress';
+import { ADDRESS_TYPE } from '../utils/const';
 
 interface MultiWeb3Context {
   account: string,
@@ -16,7 +17,7 @@ interface MultiWeb3Context {
   chain: string,
   unsignedInfo: UnsignedInfo | null,
   provider: any,
-  addressType: AddressType
+  addressType: ADDRESS_TYPE
 }
 
 export const MultiWeb3Context = createContext<MultiWeb3Context>({
@@ -26,7 +27,7 @@ export const MultiWeb3Context = createContext<MultiWeb3Context>({
   chain: '',
   unsignedInfo: null,
   provider: null,
-  addressType: AddressType.DEFAULT
+  addressType: ADDRESS_TYPE.DEFAULT
 })
 
 export const useMultiWeb3 = () => useContext(MultiWeb3Context)
@@ -41,7 +42,7 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [signature, setSignature] = useState<Uint8Array | null>(null)
   const [unsignedInfo, setUnsignedInfo] = useState<UnsignedInfo | null>(null)
   const [accountName, setAccountName] = useState('')
-  const [addressType, setAddressType] = useState(AddressType.DEFAULT)
+  const [addressType, setAddressType] = useState(ADDRESS_TYPE.DEFAULT)
 
   useEffect(() => {
     if (ethereumAccount && name) {
@@ -58,7 +59,7 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
     if (ethereumAccount && provider) {
       console.log(`ethereumAccount:`, ethereumAccount);
       setChain('ethereum')
-      setAccount(ethereumAccount)
+      setAccount(ethereumAccount.toLowerCase())
 
       const getEthereumSignature = async () => {
         // const unsignedInfo = UnsignedInfo.new_with_signer(ethereumAccount, SignerMode.EIP712);
@@ -79,10 +80,10 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
       setChain('solana')
       setAccount(pubKey)
       setAccountName(formatAddress(pubKey))
-      setAddressType(AddressType.ED25519)
+      setAddressType(ADDRESS_TYPE.ED25519)
 
       const getSolanaSignature = async () => {
-        const unsignedInfo = UnsignedInfo.new_with_address(pubKey, AddressType.ED25519);
+        const unsignedInfo = UnsignedInfo.new_with_address(pubKey, ADDRESS_TYPE.ED25519);
         const data = new TextEncoder().encode(unsignedInfo.auth);
         const signature = await wallet.signMessage(data, 'utf8');
   
@@ -95,7 +96,7 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
       setChain('')
       setAccount('')
       setSignature(null)
-      setAddressType(AddressType.DEFAULT)
+      setAddressType(ADDRESS_TYPE.DEFAULT)
     }
   }, [ethereumAccount, wallet, connected, provider])
 

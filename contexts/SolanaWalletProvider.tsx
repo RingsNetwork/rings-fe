@@ -45,10 +45,10 @@ export const WALLET_PROVIDERS = [
 
 const WalletContext = React.createContext<any>(null);
 
-export function WalletProvider({ children = null as any }) {
+export default function WalletProvider({ children = null as any }) {
   const [providerUrl, setProviderUrl] = useState(PHANTOM_URL);
 
-  const [autoConnect, setAutoConnect] = useState(false);
+  const [autoConnect, setAutoConnect] = useState(true);
   const [connected, setConnected] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -67,7 +67,6 @@ export function WalletProvider({ children = null as any }) {
     },
     [provider, providerUrl]
   );
-
 
   useEffect(() => {
     if (wallet) {
@@ -88,16 +87,18 @@ export function WalletProvider({ children = null as any }) {
       if (wallet) {
         wallet.disconnect();
         setConnected(false);
+        setAutoConnect(false)
       }
     };
   }, [wallet]);
 
-  useEffect(() => {
-    if (wallet) {
-      wallet.connect();
-    }
-  }, [wallet, autoConnect]);
 
+  useEffect(() => {
+    // @ts-ignore
+    if (window.solana && wallet && autoConnect) {
+      wallet.connect()
+    } 
+  }, [wallet, autoConnect]);
 
   const select = useCallback(() => {
     setIsModalVisible(true)

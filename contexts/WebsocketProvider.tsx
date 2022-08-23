@@ -1,54 +1,58 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useReducer, useRef } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
-import { AddressType } from '@ringsnetwork/rings-node'
 
 import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS'
 
 import formatAddress from '../utils/formatAddress'
+import { ADDRESS_TYPE } from '../utils/const'
+import { getAddressWithType } from '../utils'
+
+export interface OnlinePeer {
+  address: string,
+  name: string,
+  ens: string,
+  bns: string,
+  status: string,
+  type: ADDRESS_TYPE
+}
 
 interface OnlinerMapProps {
-  [key: string]: {
-    address: string,
-    name: string,
-    ens: string,
-    bns: string,
-    status: string
-  },
+  [key: string]: OnlinePeer,
 }
 
 const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payload: any }) => {
   console.log(`websocket reducer`, type, payload)
   switch (type) {
-    case 'join':
-      const { peer: { id, type} } = payload
-      const address = type === 'DEFAULT' ? id.toLowerCase() : id
+    case 'join': {
+      const { peer: { id } } = payload
+      const { address, type } = getAddressWithType(id)
 
       return {
         ...state,
         [address]: {
           address,
-          name: formatAddress(id),
+          name: formatAddress(address),
           ens: '',
           bns: '',
           status: '',
           type
         }
       }
-    case 'leave':
-      const { peer } = payload
-      const realId = peer.type === 'DEFAULT' ? peer.id.toLowerCase() : peer.id
+    }
+    case 'leave': {
+      const { peer: { id } } = payload
+      const { address } = getAddressWithType(id)
 
-      delete state[realId]
+      delete state[address]
 
       return state
-    case 'connected':
+    }
+    case 'connected': {
       const { peers } = payload
 
-      return peers.reduce((prev: OnlinerMapProps, { id: peer, type }: {id: string, type: string}) => {
-        // eth: DEFAULT
-        // solana: ED25519
-        const address = type === 'DEFAULT' ? peer.toLowerCase() : peer
+      return peers.reduce((prev: OnlinerMapProps, { id: peer }: {id: string, type: string}) => {
+        const { address, type } = getAddressWithType(peer)
 
         return {
           ...prev,
@@ -62,26 +66,35 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
           }
         }
       }, {})
-    case 'changeStatus':
-      if (!state[payload.peer]) {
+    }
+    case 'changeStatus': {
+      const { peer, status } = payload
+      const { address } = getAddressWithType(peer)
+
+      if (!state[address]) {
         return state
       }
 
       return {
         ...state,
-        [payload.peer]: {
-          ...state[payload.peer],
-          status: payload.status,
+        [address]: {
+          ...state[address],
+          status,
         }
       }
-    case 'changeName':
+    }
+    case 'changeName': {
+      const { peer, key, name } = payload
+      const { address } = getAddressWithType(peer)
+
       return {
         ...state,
-        [payload.peer]: {
-          ...state[payload.peer],
-          [payload.key]: payload.name,
+        [address]: {
+          ...state[address],
+          [key]: name,
         }
       }
+    }
     default:
       return state
   }
@@ -91,12 +104,14 @@ interface WebsocketContextProps {
   state: OnlinerMapProps,
   dispatch: React.Dispatch<any>,
   sendMessage: (status: 'join' | 'leave') => void
+  changeStatus: (peer: string, status: string) => void
 }
 
 export const WebsocketContext = createContext<WebsocketContextProps>({
   state: {} as OnlinerMapProps,
   dispatch: () => {},
-  sendMessage: () => {}
+  sendMessage: () => {},
+  changeStatus: () => {},
 })
 
 export const usePublicPeers = () => useContext(WebsocketContext)
@@ -162,7 +177,7 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     console.groupEnd()
     if (readyState === ReadyState.OPEN && account) {
       sendJsonMessage({
-        did: { id: account, type: addressType === AddressType.DEFAULT ? 'DEFAULT' : 'ED25519' },
+        did: { id: account, type: addressType === ADDRESS_TYPE.ED25519 ? 'ED25519' : 'DEFAULT' },
         timestamp: Date.now(),
         data: status
       })
@@ -196,10 +211,15 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
   }, [lastJsonMessage])
 
+  const changeStatus = useCallback((peer: string, status: string) => {
+    dispatch({ type: 'changeStatus', payload: { peer, status } })
+  }, [dispatch])
+
   return <WebsocketContext.Provider value={{
     state,
     dispatch,
     sendMessage,
+    changeStatus,
   }}>
     {children}
   </WebsocketContext.Provider>

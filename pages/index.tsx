@@ -34,6 +34,10 @@ import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
 import useMultiWeb3 from '../hooks/useMultiWeb3';
+import { OnlinePeer } from '../contexts/WebsocketProvider';
+import { ADDRESS_TYPE } from '../utils/const';
+import { Peer } from '../contexts/RingsProvider';
+import { getAddressWithType } from '../utils';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const ConnectWallet = dynamic(() => import("../components/ConnectWallet"), { ssr: false })
@@ -42,10 +46,9 @@ const { publicRuntimeConfig } = getConfig()
 
 const Home: NextPage = () => {
   const [time, setTime] = useState('--:--:--')
-  // const { account } = useWeb3React()
   const { account, accountName } = useMultiWeb3()
   const { sendMessage, connectByAddress, state: ringsState, startChat, endChat } = useRings()
-  const { sendMessage: changeStatus, state: onlinerMap, dispatch: onlinerDispatch } = useWebsocket()
+  const { sendMessage: sendJoinOrLeaveMessage, changeStatus, state: onlinerMap} = useWebsocket()
   // const accountName = useENS()
 
   const { colorMode } = useColorMode() 
@@ -108,21 +111,21 @@ const Home: NextPage = () => {
 
   const handleJoinPublicRoom = useCallback((status: 'join' | 'leave') => {
     if (account) {
-      changeStatus(status)
+      sendJoinOrLeaveMessage(status)
     }
-  }, [account, changeStatus])
+  }, [account, sendJoinOrLeaveMessage])
 
-  const handleConnectByAddress = useCallback(async (address: string) => {
+  const handleConnectByAddress = useCallback(async (peer: OnlinePeer) => {
     if (
-      !address || 
-      onlinerMap[address]?.status === 'connecting' ||
-      address.toLowerCase() === account?.toLowerCase()
+      !peer.address || 
+      peer.status === 'connecting' ||
+      peer.address === account
     ) {
       return
     }
 
-    if (onlinerMap[address]?.status === 'connected') {
-      startChat(address)
+    if (peer.status === 'connected') {
+      startChat(peer.address)
       setSending(false)
       setMessage('')
 
@@ -130,23 +133,45 @@ const Home: NextPage = () => {
     }
 
     try {
-      onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connecting' }})
+      changeStatus(peer.address, 'connecting')
 
-      await connectByAddress(address)
+      await connectByAddress(peer.address)
      
-      onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connected' }})
+      changeStatus(peer.address, 'connected')
     } catch (e) {
       console.error(e)
 
-      onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: '' }})
+      changeStatus(peer.address, '')
     }
-  }, [connectByAddress, account, onlinerMap, onlinerDispatch, startChat])
+  }, [connectByAddress, account, changeStatus, startChat])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSendMessage()
     }
   }, [handleSendMessage])
+
+  const isCurrentUserInPublicRoom = useCallback(() => {
+    if (!account || !Object.keys(onlinerMap).length) {
+      return false
+    }
+
+    const { address } = getAddressWithType(account)
+
+    return onlinerMap[address]
+  } , [account, onlinerMap])
+
+  const getPeerName = useCallback((peer: string) => {
+    const { address } = getAddressWithType(peer)
+
+    return onlinerMap[address]?.bns || 
+      ringsState.peerMap[address]?.bns || 
+      onlinerMap[address]?.ens || 
+      ringsState.peerMap[address]?.ens || 
+      onlinerMap[address]?.name || 
+      ringsState.peerMap[address]?.name ||
+      formatAddress(address)
+  }, [onlinerMap, ringsState.peerMap])
 
   const renderLeft = () => {
     return (
@@ -227,15 +252,11 @@ const Home: NextPage = () => {
                   <Flex mb="15px" color="#757D8A" justifyContent="space-between" alignItems="center">
                     <Box fontSize={10}>Public</Box>
                     {
-                      account && !Object.keys(onlinerMap).find((peer) => peer === account.toLowerCase()) ?
-                      <Box cursor="pointer" onClick={() => handleJoinPublicRoom('join')}>
-                        Join
-                      </Box> :
-                      account && Object.keys(onlinerMap).find((peer) => peer === account.toLowerCase()) ?
-                      <Box cursor="pointer" onClick={() => handleJoinPublicRoom('leave')}>
-                        Leave
-                      </Box> :
-                      null
+                      !account?
+                      null:
+                      <Box cursor="pointer" onClick={() => handleJoinPublicRoom(isCurrentUserInPublicRoom() ? 'leave' : 'join')}>
+                        { isCurrentUserInPublicRoom() ? 'Leave' : 'Join'}
+                      </Box>
                     }
                   </Flex> 
 
@@ -244,21 +265,21 @@ const Home: NextPage = () => {
                       Object.keys(onlinerMap).map((peer) => 
                         <Flex 
                           mb="20px" 
-                          cursor={ peer.toLowerCase() !== account.toLowerCase() ? 'pointer' : 'default' } 
+                          cursor={ peer !== account ? 'pointer' : 'default' } 
                           justifyContent="space-between" 
                           alignItems="center" 
                           key={peer} 
-                          onClick={() => handleConnectByAddress(peer)}
+                          onClick={() => handleConnectByAddress(onlinerMap[peer])}
                         >
                           {
-                            peer.toLowerCase() === account.toLowerCase() ?
+                            peer === account ?
                             <>
-                              <Box>{onlinerMap[peer]?.bns || ringsState.peerMap[peer]?.bns || onlinerMap[peer]?.ens || ringsState.peerMap[peer]?.name || onlinerMap[peer].name}</Box>
+                              <Box>{getPeerName(peer)}</Box>
                               <Box>You</Box> 
                             </> :
                             <>
                               <Tooltip label={onlinerMap[peer]?.status ? '': 'add to contacts'}>
-                                <Box>{onlinerMap[peer]?.bns || ringsState.peerMap[peer]?.bns || onlinerMap[peer]?.ens || ringsState.peerMap[peer]?.name || onlinerMap[peer].name}</Box>
+                                <Box>{getPeerName(peer)}</Box>
                               </Tooltip>
                               {
                                 onlinerMap[peer]?.status ? <Box>{onlinerMap[peer]?.status}</Box> : null
@@ -291,14 +312,7 @@ const Home: NextPage = () => {
                               setMessage('')
                           }}>
                             <Box>
-                              {
-                                onlinerMap[peer]?.bns || 
-                                ringsState.peerMap[peer]?.bns || 
-                                onlinerMap[peer]?.ens || 
-                                ringsState.peerMap[peer]?.ens || 
-                                onlinerMap[peer]?.name || 
-                                ringsState.peerMap[peer]?.name
-                              }
+                              { getPeerName(peer) }
                             </Box>
                             <Flex justifyContent="flex-end" alignItems="center">
                               <Box m="0 5px 0 10px">{ringsState.peerMap[peer].state}</Box>

@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import axios from 'axios';
 
+import { ADDRESS_TYPE } from "./const";
+
 export function useLocalStorageState(key: string, defaultState?: string | object) {
   const [state, setState] = useState(() => {
     const storedState = localStorage.getItem(key);
@@ -35,4 +37,27 @@ export const getFastestEndpoint = async (endpoints: string[]) => {
   }
 
   return await Promise.any(endpoints.map((endpoint) => axios.post(endpoint, { jsonrpc: '2.0', id: 1, method: 'getEpochInfo' }).then(() => endpoint)))
+}
+
+export const getAddressWithType = (address: string) => {
+  const _address = address?.replace(/^0x/, '');
+  const len = _address.length;
+
+  switch (len) {
+    // etherum address
+    // case 40:
+    //   return { type: ADDRESS_TYPE.DEFAULT, address: `0x${_address.toLowerCase()}` }
+    // solana address
+    case 43:
+    case 44:
+      return { type: ADDRESS_TYPE.ED25519, address }
+    // aptos address
+    case 60:
+    case 61:
+    case 62:
+      return { type: ADDRESS_TYPE.APTOS, address: `0x${_address.toLowerCase()}` }
+    default:
+      // etherum address
+      return { type: ADDRESS_TYPE.DEFAULT, address: `0x${_address.toLowerCase()}` }
+  }
 }
