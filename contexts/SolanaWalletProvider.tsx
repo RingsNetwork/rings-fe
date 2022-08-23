@@ -46,7 +46,7 @@ export const WALLET_PROVIDERS = [
 const WalletContext = React.createContext<any>(null);
 
 export default function WalletProvider({ children = null as any }) {
-  const [providerUrl, setProviderUrl] = useState(PHANTOM_URL);
+  const [providerUrl, setProviderUrl] = useState('');
 
   const [autoConnect, setAutoConnect] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -94,6 +94,8 @@ export default function WalletProvider({ children = null as any }) {
 
 
   useEffect(() => {
+    console.log(`wallet`, wallet)
+    console.log(`autoConnect`, autoConnect)
     // @ts-ignore
     if (window.solana && wallet && autoConnect) {
       wallet.connect()
