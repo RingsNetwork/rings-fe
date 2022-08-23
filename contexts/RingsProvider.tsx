@@ -97,6 +97,7 @@ const END_CHAT = 'END_CHAT'
 
 const reducer = (state: StateProps, { type, payload }: { type: string, payload: any } ) => {
   console.log('reducer', type, payload)
+
   switch (type) {
     case FETCH_PEERS:
       const peerMap = state.peerMap
@@ -214,14 +215,17 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const [state, dispatch] = useReducer(reducer, { peerMap: {}, chatMap: {}, activePeers: [], activePeer: '' }) 
 
+  // @ts-ignore
+  window.ringsState = state
+
   const fetchPeers = useCallback(async () => {
     if (client && status === 'connected') {
       const peers = await client.list_peers()
 
       dispatch({ type: FETCH_PEERS, payload: { peers } })
 
-      peers.forEach(( { address, state: status }: NodePeer) => {
-        const { address: peer, type} = getAddressWithType(address)
+      peers.forEach(( { address, state: status, transport_addr }: NodePeer) => {
+        const { type, address: peer} = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
 
         onlinerDispatch({ type: 'changeStatus', payload: { peer, type, status }})
       })
@@ -275,7 +279,12 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const sendMessage = useCallback(async (to: string, message: string) => {
     if (client) {
+      console.group('send message')
+      console.log(`to`, to)
+      console.log(`message`, message)
+      console.groupEnd()
       await client.send_message(to, new TextEncoder().encode(message))
+      console.log(`send message success`)
 
       dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account, to, message } } })
     }
@@ -379,18 +388,17 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         async (response: any, message: any) => {
           // console.group('on custom message')
           const { relay } = response
-          // console.log(`relay`, relay)
-          // console.log(`destination`, relay.destination)
-          // console.log(message)
-          // console.log(new TextDecoder().decode(message))
+          console.log(`relay`, relay)
+          console.log(`destination`, relay.destination)
+          console.log(message)
+          console.log(new TextDecoder().decode(message))
           const to = relay.destination
           const from = relay.path[0]
-          // console.log(`from`, from)
-          // console.log(`to`, to)
+          console.log(`from`, from)
+          console.log(`to`, to)
 
           dispatch({ type: RECEIVE_MESSAGE, payload: { peer: from, message: { from, to, message: new TextDecoder().decode(message) } } })
-          // console.log(chats.get(from))
-          // console.groupEnd()
+          console.groupEnd()
         }, async (
           relay: any, prev: String,
       ) => {

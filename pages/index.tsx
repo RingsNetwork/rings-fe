@@ -356,7 +356,7 @@ const Home: NextPage = () => {
       ringsState.activePeers.forEach((peer, i) => {
         hds.push(<Tab key={peer}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer].name}</Box>
+            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer].name || formatAddress(peer)}</Box>
             <Box
               ml="20px"
               onClick={() => {
@@ -387,11 +387,11 @@ const Home: NextPage = () => {
               mb="20px"
             >
               <Flex alignItems="center">
-                <Box color={ from.toLowerCase() === account?.toLowerCase() ? "#15CD96" : '#757d8a'} mr="10px">
+                <Box color={ from === account ? "#15CD96" : '#757d8a'} mr="10px">
                   { 
-                    from.toLowerCase() === account?.toLowerCase() ?
+                    from === account ?
                     accountName:
-                    ringsState.peerMap[from.toLowerCase()]?.bns || ringsState.peerMap[from.toLowerCase()]?.ens || ringsState.peerMap[from.toLowerCase()]?.name 
+                    ringsState.peerMap[from]?.bns || ringsState.peerMap[from]?.ens || ringsState.peerMap[from]?.name || formatAddress(from) 
                   } &gt; 
                 </Box>
                 <Box fontSize="12px">{message}</Box>
