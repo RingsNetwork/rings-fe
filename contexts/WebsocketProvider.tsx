@@ -27,11 +27,12 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
     case 'join': {
       const { peer: { id } } = payload
       const { address, type } = getAddressWithType(id)
+      const key = type === ADDRESS_TYPE.DEFAULT ? id.toLowerCase() : id
 
       return {
         ...state,
-        [address]: {
-          address,
+        [key]: {
+          address: key,
           name: formatAddress(address),
           ens: '',
           bns: '',
@@ -42,9 +43,10 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
     }
     case 'leave': {
       const { peer: { id } } = payload
-      const { address } = getAddressWithType(id)
+      const { type } = getAddressWithType(id)
+      const key = type === ADDRESS_TYPE.DEFAULT ? id.toLowerCase() : id
 
-      delete state[address]
+      delete state[key]
 
       return state
     }
@@ -53,11 +55,12 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
 
       return peers.reduce((prev: OnlinerMapProps, { id: peer }: {id: string, type: string}) => {
         const { address, type } = getAddressWithType(peer)
+        const key = type === ADDRESS_TYPE.DEFAULT ? peer.toLowerCase() : peer
 
         return {
           ...prev,
-          [address]: {
-            address,
+          [key]: {
+            address: key,
             name: formatAddress(address),
             ens: '',
             bns: '',
@@ -69,28 +72,30 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
     }
     case 'changeStatus': {
       const { peer, status } = payload
-      const { address } = getAddressWithType(peer)
+      const { type } = getAddressWithType(peer)
+      const key = type === ADDRESS_TYPE.DEFAULT ? peer.toLowerCase() : peer
 
-      if (!state[address]) {
+      if (!state[key]) {
         return state
       }
 
       return {
         ...state,
-        [address]: {
-          ...state[address],
+        [key]: {
+          ...state[key],
           status,
         }
       }
     }
     case 'changeName': {
       const { peer, key, name } = payload
-      const { address } = getAddressWithType(peer)
+      const { type } = getAddressWithType(peer)
+      const addr = type === ADDRESS_TYPE.DEFAULT ? peer.toLowerCase() : peer
 
       return {
         ...state,
-        [address]: {
-          ...state[address],
+        [addr]: {
+          ...state[addr],
           [key]: name,
         }
       }

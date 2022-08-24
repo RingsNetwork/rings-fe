@@ -116,6 +116,7 @@ const Home: NextPage = () => {
   }, [account, sendJoinOrLeaveMessage])
 
   const handleConnectByAddress = useCallback(async (peer: OnlinePeer) => {
+    console.log(`peer`, peer)
     if (
       !peer.address || 
       peer.status === 'connecting' ||
@@ -125,7 +126,19 @@ const Home: NextPage = () => {
     }
 
     if (peer.status === 'connected') {
-      startChat(peer.address)
+      let address = peer.address
+
+      // if peer is not in peerMap, maybe it's an EED25519 address
+      if (!ringsState.peerMap[peer.address]) {
+        const addr = Object.keys(ringsState.peerMap).find(address => ringsState.peerMap[address].transport_addr === peer.address)
+        console.log()
+
+        if (addr) {
+          address = ringsState.peerMap[addr].address
+        }
+      }
+
+      startChat(address)
       setSending(false)
       setMessage('')
 
@@ -143,7 +156,7 @@ const Home: NextPage = () => {
 
       changeStatus(peer.address, '')
     }
-  }, [connectByAddress, account, changeStatus, startChat])
+  }, [connectByAddress, account, changeStatus, startChat, ringsState.peerMap])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -162,15 +175,13 @@ const Home: NextPage = () => {
   } , [account, onlinerMap])
 
   const getPeerName = useCallback((peer: string) => {
-    const { address } = getAddressWithType(peer)
-
-    return onlinerMap[address]?.bns || 
-      ringsState.peerMap[address]?.bns || 
-      onlinerMap[address]?.ens || 
-      ringsState.peerMap[address]?.ens || 
-      onlinerMap[address]?.name || 
-      ringsState.peerMap[address]?.name ||
-      formatAddress(address)
+    return onlinerMap[peer]?.bns || 
+      ringsState.peerMap[peer]?.bns || 
+      onlinerMap[peer]?.ens || 
+      ringsState.peerMap[peer]?.ens || 
+      onlinerMap[peer]?.name || 
+      ringsState.peerMap[peer]?.name ||
+      formatAddress(peer)
   }, [onlinerMap, ringsState.peerMap])
 
   const renderLeft = () => {
@@ -315,7 +326,7 @@ const Home: NextPage = () => {
                               { getPeerName(peer) }
                             </Box>
                             <Flex justifyContent="flex-end" alignItems="center">
-                              <Box m="0 5px 0 10px">{ringsState.peerMap[peer].state}</Box>
+                              <Box m="0 5px 0 10px">{ringsState.peerMap[peer]?.state}</Box>
                               {
                                 ringsState.chatMap[peer]?.status === 'unread' ?
                                 <Box w="6px" h="6px" borderRadius="50%" bg="red"></Box> : 
@@ -356,7 +367,7 @@ const Home: NextPage = () => {
       ringsState.activePeers.forEach((peer, i) => {
         hds.push(<Tab key={peer}>
           <Flex justifyContent="space-between" alignItems="center" fontSize="10px">
-            <Box>{ringsState.peerMap[peer]?.bns || ringsState.peerMap[peer]?.ens || ringsState.peerMap[peer]?.name || formatAddress(peer)}</Box>
+            <Box>{getPeerName(peer)}</Box>
             <Box
               ml="20px"
               onClick={() => {
@@ -379,7 +390,7 @@ const Home: NextPage = () => {
     const renderMessages = () => {
       let messages: Array<React.ReactNode> = []
 
-      if (ringsState.activePeer && ringsState.chatMap[ringsState.activePeer]) {
+      if (ringsState.activePeer && ringsState.chatMap[ringsState.activePeer] && ringsState.chatMap[ringsState.activePeer].messages) {
         messages = ringsState.chatMap[ringsState.activePeer].messages.map(({ message, from }, i) => {
           return (
             <Box 
@@ -391,7 +402,7 @@ const Home: NextPage = () => {
                   { 
                     from === account ?
                     accountName:
-                    ringsState.peerMap[from]?.bns || ringsState.peerMap[from]?.ens || ringsState.peerMap[from]?.name || formatAddress(from) 
+                    getPeerName(from) 
                   } &gt; 
                 </Box>
                 <Box fontSize="12px">{message}</Box>

@@ -42,7 +42,7 @@ interface RingsContext {
 export interface Peer {
     address: string,
     state: string | undefined,
-    originalAddress: string,
+    transport_addr: string,
     transport_id: string,
     name: string,
     bns: string,
@@ -97,7 +97,7 @@ const ACTIVE_CHAT = 'ACTIVE_CHAT'
 const END_CHAT = 'END_CHAT'
 
 const reducer = (state: StateProps, { type, payload }: { type: string, payload: any } ) => {
-  console.log('reducer', type, payload)
+  console.log('reducer', type, payload, state)
 
   switch (type) {
     case FETCH_PEERS:
@@ -117,24 +117,24 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
       payload.peers.forEach(({ address, transport_addr, ...rest }: NodePeer) => {
         const { type, address: _address} = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
 
-        if (!state.peerMap[_address]) {
-            peerMap[_address] = {
+        if (!state.peerMap[address]) {
+            peerMap[address] = {
               ...rest,
-              address: _address,
+              transport_addr: transport_addr.replace(/^1/, ''),
+              address,
               name: formatAddress(_address),
               bns: '',
               ens: '',
               type,
-              originalAddress: address,
             }
 
-            chatMap[_address] = {
+            chatMap[address] = {
               messages: [],
               status: ''
             }
         } else {
-          peerMap[_address] = {
-            ...state.peerMap[_address],
+          peerMap[address] = {
+            ...state.peerMap[address],
             ...rest,
           }
         }
@@ -185,15 +185,13 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
         activePeers
       }
     case RECEIVE_MESSAGE:
-      const { address } = getAddressWithType(payload.peer)
-
       return {
         ...state,
         chatMap: {
           ...state.chatMap,
-          [address]: {
-            messages: state.chatMap[address] ? [...state.chatMap[address].messages, payload.message] : [payload.message],
-            status: state.activePeer === address ? 'read' : 'unread',
+          [payload.peer]: {
+            messages: state.chatMap[payload.peer] ? [...state.chatMap[payload.peer].messages, payload.message] : [payload.message],
+            status: state.activePeer === payload.peer ? 'read' : 'unread',
           }
         },
       }
@@ -224,9 +222,15 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       dispatch({ type: FETCH_PEERS, payload: { peers } })
 
       peers.forEach(( { address, state: status, transport_addr }: NodePeer) => {
-        const { type, address: peer} = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
+        const { type } = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
 
-        onlinerDispatch({ type: 'changeStatus', payload: { peer, type, status }})
+        let peer = address
+
+        if (type === ADDRESS_TYPE.ED25519) {
+          peer = transport_addr.replace(/^1/, '')
+        }
+
+        onlinerDispatch({ type: 'changeStatus', payload: { peer, status }})
       })
     }
   }, [client, status, onlinerDispatch])
@@ -281,20 +285,20 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       console.group('send message')
       console.log(`to`, to)
       console.log(`message`, message)
-      console.log(`address`, state.peerMap[to].originalAddress)
       console.groupEnd()
-      await client.send_message(state.peerMap[to].originalAddress, new TextEncoder().encode(message))
+      await client.send_message(to, new TextEncoder().encode(message))
       console.log(`send message success`)
+      const { type } = getAddressWithType(account)
 
-      dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account, to, message } } })
+      dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: type === ADDRESS_TYPE.DEFAULT ? account.toLowerCase() : account, to, message } } })
     }
-  }, [client, account, state.peerMap])
+  }, [client, account])
 
   const connectByAddress = useCallback(async (address: string) => {
     if (client && address) {
-      const { address: peer, type } = getAddressWithType(address)
-      console.log(`connect by address: ${peer} ${type}`)
-      await client.connect_with_address(peer, type)
+      const { type } = getAddressWithType(address)
+      console.log(`connect by address: ${address} ${type}`)
+      await client.connect_with_address(address, type)
       console.log(`connected`)
     }
   }, [client])
@@ -392,8 +396,8 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           console.log(`destination`, relay.destination)
           console.log(message)
           console.log(new TextDecoder().decode(message))
-          const to = relay.destination
-          const from = relay.path[0]
+          const to = relay.destination.replace(/^0x/, '')
+          const from = relay.path[0].replace(/^0x/, '')
           console.log(`from`, from)
           console.log(`to`, to)
 
