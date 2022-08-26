@@ -42,7 +42,7 @@ interface RingsContext {
 export interface Peer {
     address: string,
     state: string | undefined,
-    transport_addr: string,
+    transport_pubkey: string,
     transport_id: string,
     name: string,
     bns: string,
@@ -114,13 +114,13 @@ const reducer = (state: StateProps, { type, payload }: { type: string, payload: 
         }
       })
 
-      payload.peers.forEach(({ address, transport_addr, ...rest }: NodePeer) => {
-        const { type, address: _address} = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
+      payload.peers.forEach(({ address, transport_pubkey, ...rest }: NodePeer) => {
+        const { type, address: _address} = getAddressWithType(transport_pubkey.startsWith('1') ? transport_pubkey.replace(/^1/, '') : address)
 
         if (!state.peerMap[address]) {
             peerMap[address] = {
               ...rest,
-              transport_addr: transport_addr.replace(/^1/, ''),
+              transport_pubkey: transport_pubkey.replace(/^1/, ''),
               address,
               name: formatAddress(_address),
               bns: '',
@@ -221,13 +221,13 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       dispatch({ type: FETCH_PEERS, payload: { peers } })
 
-      peers.forEach(( { address, state: status, transport_addr }: NodePeer) => {
-        const { type } = getAddressWithType(transport_addr.startsWith('1') ? transport_addr.replace(/^1/, '') : address)
+      peers.forEach(( { address, state: status, transport_pubkey }: NodePeer) => {
+        const { type } = getAddressWithType(transport_pubkey.startsWith('1') ? transport_pubkey.replace(/^1/, '') : address)
 
         let peer = address
 
         if (type === ADDRESS_TYPE.ED25519) {
-          peer = transport_addr.replace(/^1/, '')
+          peer = transport_pubkey.replace(/^1/, '')
         }
 
         onlinerDispatch({ type: 'changeStatus', payload: { peer, status }})

@@ -130,7 +130,7 @@ const Home: NextPage = () => {
 
       // if peer is not in peerMap, maybe it's an EED25519 address
       if (!ringsState.peerMap[peer.address]) {
-        const addr = Object.keys(ringsState.peerMap).find(address => ringsState.peerMap[address].transport_addr === peer.address)
+        const addr = Object.keys(ringsState.peerMap).find(address => ringsState.peerMap[address].transport_pubkey === peer.address)
         console.log()
 
         if (addr) {
