@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import getConfig from 'next/config'
 
 import { format } from 'fecha'
+// @ts-ignore
+import reactComposition from 'react-composition'
 
 import { 
   Box, 
@@ -72,21 +74,6 @@ const Home: NextPage = () => {
     }
   }, [])
 
-  const handleComposition = useCallback(({ type, target: { value }}: React.ChangeEvent<HTMLInputElement>) => {
-    if (type === "compositionstart") {
-      setInputing(true)
-    } else if (type === "compositionend") {
-      setInputing(false)
-      setMessage(value)
-    }  
-  }, [])
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!inputing) {
-      setMessage(e.target.value)
-    }
-  }, [inputing])
-  
   const handleSendMessage = useCallback(async () => {
     if (sending || !message || !ringsState.activePeer) {
       return false
@@ -159,10 +146,10 @@ const Home: NextPage = () => {
   }, [connectByAddress, account, changeStatus, startChat, ringsState.peerMap])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (!inputing && e.key === 'Enter') {
       handleSendMessage()
     }
-  }, [handleSendMessage])
+  }, [handleSendMessage, inputing])
 
   const isCurrentUserInPublicRoom = useCallback(() => {
     if (!account || !Object.keys(onlinerMap).length) {
@@ -450,13 +437,18 @@ const Home: NextPage = () => {
               mr="15px" 
               type="text" 
               placeholder='Type message' 
-              // value={message} 
-              onChange={handleInputChange} 
               onKeyDown={handleKeyDown} 
-              // @ts-ignore
-              onCompositionStart={handleComposition}
-              // @ts-ignore
-              onCompositionEnd={handleComposition}
+              {...reactComposition({
+                onChange (e: any) {
+                  const { target: { value }, reactComposition: { composition }} = e
+
+                  setInputing(composition)
+
+                  if (composition === false) {
+                    setMessage(value)
+                  }
+                },
+            })}
             />
             <Button 
               disabled={
