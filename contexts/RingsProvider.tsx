@@ -265,7 +265,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const sendMessage = useCallback(async (to: string, message: string) => {
     if (client) {
-      await client.send_message(to, new TextEncoder().encode(message))
+      await client.send_simple_text_message(to, message) //new TextEncoder().encode(message))
 
       dispatch({ type: RECEIVE_MESSAGE, payload: { peer: to, message: { from: account!, to, message } } })
     }
