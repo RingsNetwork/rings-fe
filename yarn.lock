@@ -2045,10 +2045,10 @@
     path-browserify "^1.0.0"
     url "^0.11.0"
 
-"@ringsnetwork/bns-util@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@ringsnetwork/bns-util/-/bns-util-0.2.0.tgz#01e9a6e390ce7471831d54a899000e3257b6607c"
-  integrity sha512-Nd9SeaByDH6zmWDRjLUxqkBKKhj5AcKcpNKwnSvMvk+cwuHZ6tgkFqKCDoirux+NpN+Fx+/PHOa/g9JTlhiqYQ==
+"@ringsnetwork/bns-util@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@ringsnetwork/bns-util/-/bns-util-0.4.0.tgz#5813d78d8ce6955525e158f17f703baf43bcbc6a"
+  integrity sha512-Ly08vHBOLfg4qygAgOLazitOUwPDJ+IUrugMTN6r130QLPlgx4Dt101kAJiHcyi8ITkygBY3nTsaXN4yusVTFw==
   dependencies:
     "@0xproject/utils" "^2.0.2"
     "@babel/plugin-proposal-class-properties" "^7.8.3"
@@ -2071,10 +2071,10 @@
     ethers "^5.6.2"
     js-sha3 "^0.8.0"
 
-"@ringsnetwork/rings-node@0.2.1-dev-20220810.1":
-  version "0.2.1-dev-20220810.1"
-  resolved "https://registry.yarnpkg.com/@ringsnetwork/rings-node/-/rings-node-0.2.1-dev-20220810.1.tgz#8d68deba846a7e144afad96a7feda607f20103e7"
-  integrity sha512-EUr4YiDiswEwGQH9dyBJVGzKgcbWrJmPluxIloqUBGFEUMpFVBupf9IBwrxAdAoJ+sgbNaokDEoLVMBCLZjxhQ==
+"@ringsnetwork/rings-node@0.2.1-dev-20221130.1":
+  version "0.2.1-dev-20221130.1"
+  resolved "https://registry.yarnpkg.com/@ringsnetwork/rings-node/-/rings-node-0.2.1-dev-20221130.1.tgz#89048499e967980c6bc3d9ccdbca103ff281ffa0"
+  integrity sha512-PFmJ2V5mPdcFd8L9YiPdn63XRgDCmyFObRGl5zucThMQ57Mp9+RmUqQjrwlLBz+HwfCy/IYZqxHYKYRLQNoC4Q==
 
 "@rushstack/eslint-patch@1.0.8":
   version "1.0.8"

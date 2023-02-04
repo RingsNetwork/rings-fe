@@ -382,14 +382,17 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           dispatch({ type: RECEIVE_MESSAGE, payload: { peer: from, message: { from, to, message: new TextDecoder().decode(message) } } })
           // console.log(chats.get(from))
           // console.groupEnd()
-        }, async (
+        }, 
+        // http response message
+        async (response: any, message: any) => {},
+        async (
           relay: any, prev: String,
-      ) => {
-        // console.group('on builtin message')
-        // console.log(relay)
-        // console.log(prev)
-        // console.groupEnd()
-      },
+        ) => {
+          // console.group('on builtin message')
+          // console.log(relay)
+          // console.log(prev)
+          // console.groupEnd()
+        },
       )
 
       await client.listen(callback)
