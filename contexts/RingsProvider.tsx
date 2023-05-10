@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback, createContext, useContext, useReducer } from 'react'
 
-import init, { Client, Peer, MessageCallbackInstance, debug, AddressType } from '@ringsnetwork/rings-node'
+import init, { Client, MessageCallbackInstance, debug, AddressType } from '@ringsnetwork/rings-node'
 
 import useMultiWeb3 from '../hooks/useMultiWeb3'
 import useBNS from '../hooks/useBNS';
 import useWebsocket from '../hooks/useWebsocket'
 
 import formatAddress from '../utils/formatAddress';
+
+export enum ADDRESS_TYPE { DEFAULT, ED25519, APTOS, UNKNOWN, BIP137 }
 
 export interface Chat_props {
   from: string,
@@ -21,7 +23,7 @@ interface RingsContext {
   connectByAddress: (address: string) => Promise<void>,
   createOffer: () => Promise<void>,
   answerOffer: (offer: any) => Promise<void>,
-  acceptAnswer: (transportId: any, answer: any) => Promise<void>,
+  acceptAnswer: (answer: any) => Promise<void>,
   turnUrl: string,
   setTurnUrl: (turnUrl: string) => void,
   nodeUrl: string,
@@ -34,15 +36,20 @@ interface RingsContext {
   startChat: (peer: string) => void,
   endChat: (peer: string) => void,
 }
+
+export interface Peer {
+  address: string,
+  state: string | undefined,
+  transport_pubkey: string,
+  transport_id: string,
+  name: string,
+  bns: string,
+  ens: string,
+  type: ADDRESS_TYPE,
+}
+
 interface PeerMapProps {
-  [key: string] : {
-    address: string,
-    state: string | undefined,
-    transport_id: string,
-    name: string,
-    bns: string,
-    ens: string,
-  }
+  [key: string]: Peer
 }
 
 export const RingsContext = createContext<RingsContext>({
@@ -297,9 +304,9 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   }, [client])
 
-  const acceptAnswer = useCallback(async (transportId: any, answer: any) => {
-    if (client && transportId) {
-      const result = await client.accept_answer(transportId, answer)
+  const acceptAnswer = useCallback(async (answer: any) => {
+    if (client) {
+      const result = await client.accept_answer(answer)
 
       return result
     }
@@ -359,7 +366,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const initClient = useCallback(async() => {
     if (account && wasm && turnUrl && nodeUrl && signature && unsignedInfo) {
       console.log(`initClient`)
-      debug(process.env.NODE_ENV !== 'development') 
+      debug(process.env.NODE_ENV === 'development') 
       setStatus('connecting')
 
       const client = await Client.new_client(unsignedInfo, signature, turnUrl);
@@ -397,18 +404,17 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       await client.listen(callback)
 
-      const promises = nodeUrl.split(';').map(async (url: string) => 
-        await client.connect_peer_via_http(nodeUrl)
-      )
+      // const promises = nodeUrl.split(';').map(async (url: string) => 
+      //   await client.connect_peer_via_http(nodeUrl)
+      // )
 
       try {
-        await Promise.any(promises)
-        // await client.connect_peer_via_http(nodeUrl)
+        // await Promise.any(promises)
+        await client.connect_peer_via_http(nodeUrl)
+        setStatus('connected')
       } catch (e) {
-        console.error(e)
+        console.log('error', e)
       }
-
-      setStatus('connected')
 
       return () => {
         setStatus('disconnected')
