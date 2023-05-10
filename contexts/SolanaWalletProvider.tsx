@@ -46,7 +46,7 @@ export const WALLET_PROVIDERS = [
 const WalletContext = React.createContext<any>(null);
 
 export function WalletProvider({ children = null as any }) {
-  const [providerUrl, setProviderUrl] = useState();
+  const [providerUrl, setProviderUrl] = useState('');
 
   const [autoConnect, setAutoConnect] = useState(false);
   const [connected, setConnected] = useState(false);
