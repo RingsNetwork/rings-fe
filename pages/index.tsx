@@ -133,7 +133,7 @@ const Home: NextPage = () => {
     try {
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connecting' }})
 
-      await connectByAddress(address, addressType)
+      await connectByAddress(address, AddressType.DEFAULT)
      
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connected' }})
     } catch (e) {
