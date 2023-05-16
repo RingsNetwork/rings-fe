@@ -284,7 +284,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       console.log(`address: ${address}`)
       console.log(`address type: ${addressType}`)
       try {
-        await client.connect_with_address_without_wait(address, addressType)
+        await client.connect_with_address(address, addressType)
         console.log('connected')
       } catch (e) {
         console.error(e)
