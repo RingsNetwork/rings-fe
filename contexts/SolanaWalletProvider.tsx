@@ -46,7 +46,7 @@ export const WALLET_PROVIDERS = [
 const WalletContext = React.createContext<any>(null);
 
 export function WalletProvider({ children = null as any }) {
-  const [providerUrl, setProviderUrl] = useState('');
+  const [providerUrl, setProviderUrl] = useState(PHANTOM_URL);
 
   const [autoConnect, setAutoConnect] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -55,7 +55,7 @@ export function WalletProvider({ children = null as any }) {
   const provider = useMemo(
     () => WALLET_PROVIDERS.find(({ url }) => url === providerUrl),
     [providerUrl]
-  );
+  )
 
   const wallet = useMemo(
     function () {
@@ -71,6 +71,7 @@ export function WalletProvider({ children = null as any }) {
   useEffect(() => {
     if (wallet) {
       wallet.on("connect", () => {
+        console.log(`on connect`, wallet.publicKey)
         if (wallet.publicKey) {
           setConnected(true);
         }
@@ -92,7 +93,7 @@ export function WalletProvider({ children = null as any }) {
 
   useEffect(() => {
     if (wallet) {
-      wallet.connect();
+      wallet.connect()
     }
   }, [wallet, autoConnect])
 

@@ -20,7 +20,7 @@ interface RingsContext {
   client: Client | null,
   fetchPeers: () => Promise<void>,
   sendMessage: (to: string, message: string) => Promise<void>,
-  connectByAddress: (address: string) => Promise<void>,
+  connectByAddress: (address: string, addressType: AddressType) => Promise<void>,
   createOffer: () => Promise<void>,
   answerOffer: (offer: any) => Promise<void>,
   acceptAnswer: (answer: any) => Promise<void>,
@@ -278,13 +278,18 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
   }, [client, account])
 
-  const connectByAddress = useCallback(async (address: string) => {
+  const connectByAddress = useCallback(async (address: string, addressType: AddressType) => {
+    console.group('connect by address')
     if (client && address) {
-      console.log(`connect by address: ${address}`)
-      // TODO
-      // use addressType for current address
-      await client.connect_with_address(address, AddressType.DEFAULT)
-      console.log(`connected`)
+      console.log(`address: ${address}`)
+      console.log(`address type: ${addressType}`)
+      try {
+        await client.connect_with_address_without_wait(address, addressType)
+        console.log('connected')
+      } catch (e) {
+        console.error(e)
+      }
+      console.groupEnd()
     }
   }, [client])
 
@@ -372,6 +377,7 @@ const RingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       const client = await Client.new_client(unsignedInfo, signature, turnUrl);
       console.log(`client`, client)
       setClient(client)
+      ;(window as any).ringsNodeClient = client
 
       const callback = new MessageCallbackInstance(
         async (response: any, message: any) => {

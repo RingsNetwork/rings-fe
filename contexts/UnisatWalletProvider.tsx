@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react'
 
 import Logo from "../assets/unisat.png";
+import { get_address_from_hex_pubkey } from "@ringsnetwork/rings-node";
 
 const URL = "https://unisat.io"
 
@@ -113,13 +114,15 @@ export default function UniSatWalletProvider({ children = null as any }) {
                   setProviderUrl(provider.url);
                   setAutoConnect(true);
                   try {
-                    const accounts = await provider.adapter.requestAccounts()
-                    console.log(accounts)
                     const pubKey = await provider.adapter.getPublicKey()
-                    console.log(pubKey)
+                    // get the same address as ethereum
+                    console.log('pubKey', pubKey)
+                    const account = `0x${get_address_from_hex_pubkey(pubKey)}`
+                    console.log(`account`, account)
+
                     setPubKey(pubKey)
+                    setAccount(account)
                     setConnected(true)
-                    setAccount(accounts[0])
                   } catch (error) {
                   }
 

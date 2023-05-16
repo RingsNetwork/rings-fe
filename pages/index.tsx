@@ -34,6 +34,7 @@ import Card from '../components/Card'
 import Setting from '../components/Setting'
 import Loading from '../components/Loading';
 import useMultiWeb3 from '../hooks/useMultiWeb3';
+import { AddressType } from '@ringsnetwork/rings-node';
 
 const ThemeToogle = dynamic(() => import('../components/theme'), { ssr: false })
 const ConnectWallet = dynamic(() => import("../components/ConnectWallet"), { ssr: false })
@@ -112,7 +113,7 @@ const Home: NextPage = () => {
     }
   }, [account, changeStatus])
 
-  const handleConnectByAddress = useCallback(async (address: string) => {
+  const handleConnectByAddress = useCallback(async (address: string, addressType: AddressType) => {
     if (
       !address || 
       onlinerMap[address]?.status === 'connecting' ||
@@ -132,7 +133,7 @@ const Home: NextPage = () => {
     try {
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connecting' }})
 
-      await connectByAddress(address)
+      await connectByAddress(address, addressType)
      
       onlinerDispatch({ type: 'changeStatus', payload: { peer: address, status: 'connected' }})
     } catch (e) {
@@ -227,11 +228,11 @@ const Home: NextPage = () => {
                   <Flex mb="15px" color="#757D8A" justifyContent="space-between" alignItems="center">
                     <Box fontSize={10}>Public</Box>
                     {
-                      account && !Object.keys(onlinerMap).find((peer) => peer === account.toLowerCase()) ?
+                      account && !Object.keys(onlinerMap).find((peer) => peer.toLowerCase() === account.toLowerCase()) ?
                       <Box cursor="pointer" onClick={() => handleJoinPublicRoom('join')}>
                         Join
                       </Box> :
-                      account && Object.keys(onlinerMap).find((peer) => peer === account.toLowerCase()) ?
+                      account && Object.keys(onlinerMap).find((peer) => peer.toLowerCase() === account.toLowerCase()) ?
                       <Box cursor="pointer" onClick={() => handleJoinPublicRoom('leave')}>
                         Leave
                       </Box> :
@@ -248,7 +249,7 @@ const Home: NextPage = () => {
                           justifyContent="space-between" 
                           alignItems="center" 
                           key={peer} 
-                          onClick={() => handleConnectByAddress(peer)}
+                          onClick={() => handleConnectByAddress(peer, onlinerMap[peer].type)}
                         >
                           {
                             peer.toLowerCase() === account.toLowerCase() ?

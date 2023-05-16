@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, createContext, useContext } from 'rea
 import { useWeb3React } from '@web3-react/core'
 import web3 from "web3";
 
-import { UnsignedInfo, AddressType, SignerMode } from '@ringsnetwork/rings-node'
+import { UnsignedInfo, AddressType, SignerMode, get_address } from '@ringsnetwork/rings-node'
 
 import { useWallet } from '../contexts/SolanaWalletProvider'
 import { useUnisatWallet } from '../contexts/UnisatWalletProvider'
@@ -64,6 +64,7 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
       console.log(`ethereumAccount:`, ethereumAccount);
       setChain('ethereum')
       setAccount(ethereumAccount)
+      setAddressType(AddressType.DEFAULT)
 
       const getEthereumSignature = async () => {
         // const unsignedInfo = UnsignedInfo.new_with_signer(ethereumAccount, SignerMode.EIP712);
@@ -82,8 +83,13 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
       const pubKey = wallet.publicKey.toBase58()
       console.log(`wallet`, pubKey)
       setChain('solana')
-      setAccount(pubKey)
-      setAccountName(formatAddress(pubKey))
+      console.log(`pubKey`, pubKey)
+      const account = `0x${get_address(pubKey, AddressType.ED25519)}`
+      console.log(account)
+      setAccount(account)
+      setAccountName(formatAddress(account))
+      // setAccount(pubKey)
+      // setAccountName(formatAddress(pubKey))
       setAddressType(AddressType.ED25519)
 
       const getSolanaSignature = async () => {
@@ -99,20 +105,15 @@ const MultiWeb3Provider: React.FC<{ children: React.ReactNode }> = ({ children }
     } else if (unisatConnected && unisatPubKey) {
       console.group('bitcoin')
       setChain('bitcoin')
+      console.log(`unisatAccount`, unisatAccount)
       setAccount(unisatAccount)
       setAccountName(formatAddress(unisatAccount))
-      // setAddressType(AddressType.BIP137)
+      setAddressType(AddressType.DEFAULT)
 
       const getUnisatSignature = async () => {
         const unsignedInfo = UnsignedInfo.new_with_pubkey(unisatPubKey, SignerMode.BIP137)
-        console.log(`unsignedInfo.auth`, unsignedInfo)
         const signed = await unisatWallet.signMessage(unsignedInfo.auth)
-        // const signature = new TextEncoder().encode(atob(signed))
-        // const signature = Uint8Array.from(atob(signed), c => c.charCodeAt(0))
         const signature = new Uint8Array(atob(signed).split('').map(c => c.charCodeAt(0)))
-        console.log(`signed`, signed)
-        console.log(`signature`, signature)
-        console.groupEnd()
   
         setUnsignedInfo(unsignedInfo)
         setSignature(signature)

@@ -13,7 +13,8 @@ interface OnlinerMapProps {
     name: string,
     ens: string,
     bns: string,
-    status: string
+    status: string,
+    type: AddressType,
   },
 }
 
@@ -22,7 +23,7 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
   switch (type) {
     case 'join':
       const { peer: { id, type} } = payload
-      const address = type === 'DEFAULT' ? id.toLowerCase() : id
+      const address = type === AddressType.DEFAULT ? id.toLowerCase() : id
 
       return {
         ...state,
@@ -37,7 +38,7 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
       }
     case 'leave':
       const { peer } = payload
-      const realId = peer.type === 'DEFAULT' ? peer.id.toLowerCase() : peer.id
+      const realId = peer.type === AddressType.DEFAULT ? peer.id.toLowerCase() : peer.id
 
       delete state[realId]
 
@@ -45,10 +46,10 @@ const reducer = (state: OnlinerMapProps, { type, payload }: { type: string, payl
     case 'connected':
       const { peers } = payload
 
-      return peers.reduce((prev: OnlinerMapProps, { id: peer, type }: {id: string, type: string}) => {
+      return peers.reduce((prev: OnlinerMapProps, { id: peer, type }: {id: string, type: AddressType}) => {
         // eth: DEFAULT
         // solana: ED25519
-        const address = type === 'DEFAULT' ? peer.toLowerCase() : peer
+        const address = type === AddressType.DEFAULT ? peer.toLowerCase() : peer
 
         return {
           ...prev,
@@ -161,8 +162,21 @@ const WebsocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     console.log(`readyState`, readyState)
     console.groupEnd()
     if (readyState === ReadyState.OPEN && account) {
+      console.log(
+        JSON.stringify({
+          did: { 
+            id: account, 
+            type: addressType === AddressType.DEFAULT ? AddressType.DEFAULT : AddressType.ED25519 
+          },
+          timestamp: Date.now(),
+          data: status
+        })
+      )
       sendJsonMessage({
-        did: { id: account, type: addressType === AddressType.DEFAULT ? 'DEFAULT' : 'ED25519' },
+        did: { 
+          id: account, 
+          type: addressType === AddressType.DEFAULT ? AddressType.DEFAULT : AddressType.ED25519 
+        },
         timestamp: Date.now(),
         data: status
       })
