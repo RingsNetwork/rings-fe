@@ -22,9 +22,12 @@ import WalletConnectCard from './connectors/WalletConnectCard'
 import MetaMaskCard from './connectors/MetaMaskCard'
 
 import { useWallet } from '../contexts/SolanaWalletProvider'
+import { useUnisatWallet } from '../contexts/UnisatWalletProvider'
 
 const ConnectWallet: React.FC = () => {
   const { select } = useWallet()
+  const { select: selectUnisatWallet } = useUnisatWallet()
+
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   const handleConnect = useCallback(
@@ -68,6 +71,9 @@ const ConnectWallet: React.FC = () => {
         </MenuItem>
         <MenuItem onClick={select}>
           <Box>Solana</Box>
+        </MenuItem>
+        <MenuItem onClick={selectUnisatWallet}>
+          <Box>Bitcoin</Box>
         </MenuItem>
       </MenuList>
     </Menu>

@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react'
 
 import useRings from '../hooks/useRings';
+import { AddressType } from '@ringsnetwork/rings-node';
 
 const ConnectByAddress: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -37,7 +38,7 @@ const ConnectByAddress: React.FC = () => {
   const handleConnectByAddress = useCallback(async () => {
     setLoading(true)
 
-    await connectByAddress(address)
+    await connectByAddress(address, AddressType.DEFAULT)
       setLoading(false)
       onClose()
       fetchPeers()

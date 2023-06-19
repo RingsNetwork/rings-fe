@@ -5,6 +5,7 @@ import RingsProvider from '../contexts/RingsProvider'
 import SolanaProvider from '../contexts/SolanaProvider'
 import MultiWeb3Provider from '../contexts/MultiWeb3Provider'
 import WebsocketProvider from '../contexts/WebsocketProvider'
+import UniSatProvider from '../contexts/UnisatWalletProvider'
 
 import theme from '../theme'
 
@@ -17,13 +18,15 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ChakraProvider theme={theme}>
       <Web3Provider>
         <SolanaProvider>
-          <MultiWeb3Provider>
-            <WebsocketProvider>
-              <RingsProvider>
-                <Component {...pageProps} />
-              </RingsProvider>
-            </WebsocketProvider>
-          </MultiWeb3Provider>
+          <UniSatProvider>
+            <MultiWeb3Provider>
+              <WebsocketProvider>
+                <RingsProvider>
+                  <Component {...pageProps} />
+                </RingsProvider>
+              </WebsocketProvider>
+            </MultiWeb3Provider>
+          </UniSatProvider>
         </SolanaProvider>
       </Web3Provider>
     </ChakraProvider>

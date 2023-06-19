@@ -55,7 +55,7 @@ export function WalletProvider({ children = null as any }) {
   const provider = useMemo(
     () => WALLET_PROVIDERS.find(({ url }) => url === providerUrl),
     [providerUrl]
-  );
+  )
 
   const wallet = useMemo(
     function () {
@@ -68,10 +68,10 @@ export function WalletProvider({ children = null as any }) {
     [provider, providerUrl]
   );
 
-
   useEffect(() => {
     if (wallet) {
       wallet.on("connect", () => {
+        console.log(`on connect`, wallet.publicKey)
         if (wallet.publicKey) {
           setConnected(true);
         }
@@ -87,17 +87,15 @@ export function WalletProvider({ children = null as any }) {
 
       if (wallet) {
         wallet.disconnect();
-        setConnected(false);
       }
     };
   }, [wallet]);
 
   useEffect(() => {
     if (wallet) {
-      wallet.connect();
+      wallet.connect()
     }
-  }, [wallet, autoConnect]);
-
+  }, [wallet, autoConnect])
 
   const select = useCallback(() => {
     setIsModalVisible(true)

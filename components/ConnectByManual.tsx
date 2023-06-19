@@ -1,5 +1,4 @@
 import React, { useCallback, useState } from 'react'
-import { TransportAndIce } from '@ringsnetwork/rings-node';
 
 import { 
   Box, 
@@ -27,10 +26,10 @@ const ConnectByManual: React.FC = () => {
 
   const { createOffer, answerOffer, acceptAnswer: acceptOfferAnswer, fetchPeers } = useRings()
 
-  const [offer, setOffer] = useState<TransportAndIce | null>(null)
+  const [offer, setOffer] = useState<any>(null)
 
   const [ice, setIce] = useState('')
-  const [answer, setAnswer] = useState<TransportAndIce | null>(null)
+  const [answer, setAnswer] = useState<any>(null)
   const [acceptAnswer, setAcceptAnswer] = useState('')
 
   const [offerLoading, setOfferLoading] = useState(false)
@@ -68,10 +67,10 @@ const ConnectByManual: React.FC = () => {
   }, [ice, fetchPeers, answerOffer])
 
   const handleAcceptAnswer = useCallback(async () => {
-    if (offer && offer.transport_id) {
+    if (offer) {
       try {
         setAcceptLoading(true)
-        await acceptOfferAnswer(offer.transport_id, acceptAnswer)
+        await acceptOfferAnswer(acceptAnswer)
 
         setAcceptLoading(false)
         onClose()
